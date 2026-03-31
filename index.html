@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ラヴィット!パーティーゲーム</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;-webkit-tap-highlight-color:transparent}
+body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#FFF5E6;color:#333;min-height:100dvh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;-webkit-tap-highlight-color:transparent}
+input,textarea{font-family:inherit;font-size:16px}
+
+:root{
+  --pink:#FF6B9D;--orange:#FF8C42;--yellow:#FFD700;--green:#4ECDC4;
+  --blue:#45B7D1;--purple:#A06CD5;--red:#FF4757;--white:#FFFFFF;
+  --bg:#FFF5E6;--card-shadow:0 4px 15px rgba(0,0,0,0.1);
+  --radius:16px;--radius-sm:10px;
+}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes confetti{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes rainbow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes timerPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,71,87,0.4)}50%{box-shadow:0 0 0 15px rgba(255,71,87,0)}}
+
+.fade-in{animation:fadeIn 0.4s ease}
+.pop-in{animation:popIn 0.5s ease}
+
+/* ===== HEADER ===== */
+.app-header{
+  background:linear-gradient(135deg,var(--pink),var(--orange),var(--yellow));
+  background-size:200% 200%;animation:rainbow 4s ease infinite;
+  padding:16px 20px;text-align:center;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 10px rgba(0,0,0,0.15);
+}
+.app-header h1{color:#fff;font-size:1.4rem;font-weight:900;text-shadow:2px 2px 4px rgba(0,0,0,0.2);letter-spacing:2px}
+.app-header .subtitle{color:rgba(255,255,255,0.9);font-size:0.75rem;margin-top:2px}
+.back-btn{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;
+  width:36px;height:36px;font-size:1.2rem;display:none;align-items:center;justify-content:center;
+}
+.back-btn.show{display:flex}
+
+/* ===== SCREENS ===== */
+.screen{display:none;padding:16px;padding-bottom:80px}
+.screen.active{display:block}
+
+.home-intro{text-align:center;padding:20px 0 10px;animation:fadeIn 0.6s ease}
+.home-intro h2{font-size:1.3rem;color:var(--pink);margin-bottom:6px}
+.home-intro p{font-size:0.85rem;color:#888}
+
+.game-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px}
+.game-card{
+  background:#fff;border-radius:var(--radius);padding:18px 14px;text-align:center;
+  box-shadow:var(--card-shadow);transition:all 0.3s ease;position:relative;overflow:hidden;
+  animation:fadeIn 0.5s ease both;
+}
+.game-card:nth-child(1){animation-delay:0.05s}.game-card:nth-child(2){animation-delay:0.1s}
+.game-card:nth-child(3){animation-delay:0.15s}.game-card:nth-child(4){animation-delay:0.2s}
+.game-card:nth-child(5){animation-delay:0.25s}.game-card:nth-child(6){animation-delay:0.3s}
+.game-card:active{transform:scale(0.96)}
+.game-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.game-card .game-icon{font-size:2.2rem;margin-bottom:8px;display:block}
+.game-card .game-name{font-size:0.95rem;font-weight:800;margin-bottom:4px}
+.game-card .game-desc{font-size:0.7rem;color:#999;line-height:1.4}
+.game-card .game-players{display:inline-block;margin-top:8px;padding:2px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;color:#fff}
+
+.gc-just::before,.gc-just .game-players{background:var(--red)}.gc-just .game-name{color:var(--red)}
+.gc-haa::before,.gc-haa .game-players{background:var(--pink)}.gc-haa .game-name{color:var(--pink)}
+.gc-kata::before,.gc-kata .game-players{background:var(--orange)}.gc-kata .game-name{color:var(--orange)}
+.gc-ito::before,.gc-ito .game-players{background:var(--green)}.gc-ito .game-name{color:var(--green)}
+.gc-match::before,.gc-match .game-players{background:var(--blue)}.gc-match .game-name{color:var(--blue)}
+.gc-nan::before,.gc-nan .game-players{background:var(--purple)}.gc-nan .game-name{color:var(--purple)}
+
+/* ===== SETUP ===== */
+.setup-section{background:#fff;border-radius:var(--radius);padding:24px 20px;margin-bottom:16px;box-shadow:var(--card-shadow);animation:fadeIn 0.4s ease}
+.setup-section h3{font-size:1.1rem;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.setup-row{margin-bottom:16px}
+.setup-row label{display:block;font-size:0.8rem;font-weight:700;color:#666;margin-bottom:6px}
+.setup-row input[type="number"]{width:80px;padding:10px;border:2px solid #eee;border-radius:var(--radius-sm);font-size:1.1rem;text-align:center;font-weight:700}
+.setup-row input:focus{border-color:var(--pink);outline:none}
+
+.mode-selector{display:flex;gap:10px;margin-top:8px}
+.mode-btn{flex:1;padding:14px 10px;border-radius:var(--radius-sm);border:2px solid #eee;background:#fff;text-align:center;transition:all 0.2s}
+.mode-btn.selected{border-color:var(--pink);background:#FFF0F5}
+.mode-btn .mode-icon{font-size:1.5rem;display:block;margin-bottom:4px}
+.mode-btn .mode-label{font-size:0.8rem;font-weight:700}
+.mode-btn .mode-desc{font-size:0.65rem;color:#999;margin-top:2px}
+
+.player-input-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.player-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:900;color:#fff;flex-shrink:0}
+.player-input-row input{flex:1;padding:10px 14px;border:2px solid #eee;border-radius:var(--radius-sm);font-size:0.9rem}
+.player-input-row input:focus{border-color:var(--pink);outline:none}
+.remove-player{width:28px;height:28px;border-radius:50%;background:#eee;color:#aaa;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.add-team-btn{width:100%;padding:10px;border-radius:var(--radius-sm);border:2px dashed #ddd;background:transparent;color:#aaa;font-size:0.85rem;font-weight:700;margin-top:4px}
+
+.start-btn,.action-btn{width:100%;padding:16px;border-radius:var(--radius);font-size:1.1rem;font-weight:900;color:#fff;letter-spacing:2px;transition:all 0.3s}
+.start-btn,.action-btn.primary{background:linear-gradient(135deg,var(--pink),var(--orange));box-shadow:0 4px 15px rgba(255,107,157,0.4)}
+.action-btn.green{background:linear-gradient(135deg,var(--green),#45D1B7)}
+.action-btn.blue{background:linear-gradient(135deg,var(--blue),#3FA8E0)}
+.action-btn.purple{background:linear-gradient(135deg,var(--purple),#8B5CF6)}
+.action-btn.gray{background:#ccc}
+.action-btn:active,.start-btn:active{transform:scale(0.97)}
+.action-btn{font-size:1rem;font-weight:800;letter-spacing:1px;margin-top:12px}
+
+/* ===== RULES SCREEN ===== */
+.rules-card{background:#fff;border-radius:var(--radius);padding:24px 20px;box-shadow:var(--card-shadow);margin-bottom:16px;animation:fadeIn 0.4s ease}
+.rules-card h3{font-size:1.2rem;font-weight:900;margin-bottom:12px;text-align:center}
+.rules-card .rule-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.rules-card .rule-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:900;color:#fff;flex-shrink:0}
+.rules-card .rule-text{font-size:0.9rem;line-height:1.6;padding-top:3px}
+.rules-card .rule-scoring{background:#FFF9E6;border-radius:var(--radius-sm);padding:12px;margin-top:12px;font-size:0.85rem;line-height:1.6}
+.rules-card .rule-scoring strong{color:var(--orange)}
+
+/* ===== GAME PLAY ===== */
+.game-top-bar{display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:var(--radius);padding:12px 16px;box-shadow:var(--card-shadow);margin-bottom:16px}
+.game-top-bar .round-info{font-size:0.8rem;color:#888}
+.game-top-bar .round-info strong{color:#333;font-size:1rem}
+.score-chips{display:flex;gap:6px;flex-wrap:wrap}
+.score-chip{padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;color:#fff}
+
+.question-card{background:#fff;border-radius:var(--radius);padding:28px 24px;text-align:center;box-shadow:var(--card-shadow);margin-bottom:16px;position:relative;overflow:hidden}
+.question-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--pink),var(--orange),var(--yellow),var(--green),var(--blue),var(--purple))}
+.question-label{font-size:0.75rem;color:#aaa;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:2px}
+.question-text{font-size:1.4rem;font-weight:900;line-height:1.5;color:#333}
+.question-sub{font-size:0.85rem;color:#888;margin-top:8px}
+
+.timer-bar{width:100%;height:8px;background:#eee;border-radius:4px;margin:16px 0;overflow:hidden}
+.timer-bar-fill{height:100%;border-radius:4px;transition:width 0.1s linear;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red))}
+.timer-display{text-align:center;font-size:2rem;font-weight:900;margin:8px 0}
+.timer-display.warning{color:var(--red);animation:timerPulse 1s infinite}
+
+.answer-btn{padding:16px;border-radius:var(--radius-sm);font-size:1rem;font-weight:700;background:#fff;border:3px solid #eee;transition:all 0.2s;text-align:center;width:100%}
+.answer-btn:active{transform:scale(0.96)}
+.answer-btn.selected{border-color:var(--pink);background:#FFF0F5;color:var(--pink)}
+.answer-btn.correct{border-color:var(--green);background:#E8FFF5;color:var(--green)}
+.answer-btn.wrong{border-color:var(--red);background:#FFF0F0;color:var(--red)}
+.answer-btn.voted-hidden{border-color:var(--green);background:#E8FFF5;color:var(--green);pointer-events:none}
+
+.vote-btn{padding:14px;border-radius:var(--radius-sm);border:2px solid #eee;background:#fff;font-size:0.95rem;font-weight:700;text-align:center;transition:all 0.2s}
+.vote-btn.voted{border-color:var(--pink);background:#FFF0F5}
+
+.text-input{width:100%;padding:14px;border:2px solid #eee;border-radius:var(--radius-sm);font-size:1.1rem;text-align:center;font-weight:700}
+.text-input:focus{border-color:var(--pink);outline:none}
+
+.mode-indicator{text-align:center;padding:6px;font-size:0.7rem;font-weight:700;color:#fff;border-radius:var(--radius-sm);margin-bottom:12px}
+.mode-indicator.pass-play{background:var(--blue)}
+.mode-indicator.host-mode{background:var(--purple)}
+
+/* ===== OVERLAYS ===== */
+.pass-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--blue),var(--purple));z-index:190;display:none;align-items:center;justify-content:center;padding:20px;flex-direction:column}
+.pass-screen.show{display:flex}
+.pass-screen .pass-icon{font-size:4rem;animation:bounce 1.5s ease infinite;margin-bottom:20px}
+.pass-screen .pass-text{color:#fff;font-size:1.2rem;font-weight:800;text-align:center;line-height:1.6}
+.pass-screen .pass-name{color:var(--yellow);font-size:1.6rem;font-weight:900;margin:10px 0}
+.pass-screen button{margin-top:30px;padding:16px 50px;border-radius:var(--radius);font-size:1.1rem;font-weight:800;color:var(--purple);background:#fff}
+
+.secret-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.secret-overlay.show{display:flex}
+.secret-card{background:#fff;border-radius:20px;padding:30px 24px;text-align:center;max-width:340px;width:100%;animation:popIn 0.4s ease}
+.secret-card h3{font-size:1rem;color:#888;margin-bottom:10px}
+.secret-card .secret-content{font-size:1.8rem;font-weight:900;padding:20px;margin:10px 0;background:linear-gradient(135deg,#FFF0F5,#FFF5E6);border-radius:var(--radius)}
+.secret-card .secret-hint{font-size:0.8rem;color:#aaa;margin-top:10px;white-space:pre-line}
+.secret-card button{margin-top:16px;padding:14px 40px;border-radius:var(--radius);font-size:1rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--pink),var(--orange))}
+
+.result-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.result-overlay.show{display:flex}
+.result-overlay .result-bg{position:absolute;inset:0;background:rgba(0,0,0,0.7)}
+.result-card{position:relative;z-index:1;background:#fff;border-radius:20px;padding:30px 24px;text-align:center;max-width:360px;width:100%;animation:popIn 0.5s ease}
+.result-card .result-icon{font-size:3rem;margin-bottom:10px}
+.result-card .result-text{font-size:1.3rem;font-weight:900;margin-bottom:6px}
+.result-card .result-answer{font-size:1.6rem;font-weight:900;color:var(--pink);margin:10px 0;padding:12px;background:#FFF0F5;border-radius:var(--radius-sm)}
+.result-card .result-detail{font-size:0.85rem;color:#888;line-height:1.6;white-space:pre-line}
+.result-card .result-next-btn{margin-top:16px;padding:14px 40px;border-radius:var(--radius);font-size:1rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--pink),var(--orange));pointer-events:none;opacity:0.4;transition:all 0.3s}
+.result-card .result-next-btn.enabled{pointer-events:auto;opacity:1}
+
+/* ===== JUST ===== */
+.just-value{font-size:2.5rem;font-weight:900;color:var(--red);margin:10px 0}
+
+/* ===== HAA ===== */
+.emotion-display{font-size:2rem;font-weight:900;padding:16px;margin:10px 0;background:linear-gradient(135deg,#FFF0F5,#FFE0EB);border-radius:var(--radius);color:var(--pink)}
+
+/* ===== ITO ===== */
+.ito-number{font-size:4rem;font-weight:900;background:linear-gradient(135deg,var(--green),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ito-theme{font-size:1.2rem;font-weight:800;color:var(--green);margin:8px 0;padding:10px;background:#E8FFF5;border-radius:var(--radius-sm)}
+.ito-order-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#E8FFF5;border-radius:var(--radius-sm);margin-bottom:4px}
+.ito-undo-btn{margin-left:auto;background:var(--red);color:#fff;border-radius:50%;width:24px;height:24px;font-size:0.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ===== NANTETTA ===== */
+.nantetta-scene{background:linear-gradient(135deg,#F0F4FF,#E8ECFF);border-radius:var(--radius);padding:24px;text-align:center;margin:16px 0}
+.nantetta-char{font-size:4rem;margin-bottom:8px}
+.nantetta-situation{font-size:0.9rem;color:#666;font-style:italic;margin-top:8px}
+.speech-bubble{position:relative;display:inline-block;padding:16px 24px;background:#fff;border-radius:20px;font-size:1.2rem;font-weight:800;margin-top:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.speech-bubble::after{content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);border:10px solid transparent;border-top-color:#fff}
+
+/* ===== FINAL ===== */
+.final-screen{text-align:center;padding:30px 16px}
+.final-screen .trophy{font-size:5rem;animation:bounce 2s ease infinite}
+.final-screen .winner-name{font-size:2rem;font-weight:900;margin:16px 0;color:var(--pink)}
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:12px;margin:20px 0}
+.podium-item{text-align:center;border-radius:var(--radius) var(--radius) 0 0;padding:12px 16px;color:#fff;font-weight:800;display:flex;flex-direction:column;justify-content:flex-end}
+.podium-item.first{background:linear-gradient(135deg,var(--yellow),var(--orange));min-height:140px}
+.podium-item.second{background:linear-gradient(135deg,#C0C0C0,#A8A8A8);min-height:100px}
+.podium-item.third{background:linear-gradient(135deg,#CD7F32,#B8722D);min-height:70px}
+
+.scoreboard{background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--card-shadow);margin-top:16px}
+.scoreboard h3{font-size:0.9rem;font-weight:800;margin-bottom:12px;text-align:center;color:#888}
+.score-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:var(--radius-sm);margin-bottom:6px}
+
+/* ===== HISTORY ===== */
+.history-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.25);color:#fff;border-radius:50%;width:36px;height:36px;font-size:1.1rem;display:flex;align-items:center;justify-content:center}
+.history-section{background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--card-shadow);margin-top:16px;animation:fadeIn 0.4s ease}
+.history-item{padding:10px 0;border-bottom:1px solid #eee;font-size:0.85rem}
+.history-item:last-child{border-bottom:none}
+
+.confetti-container{position:fixed;inset:0;pointer-events:none;z-index:300;overflow:hidden}
+.confetti-piece{position:absolute;width:10px;height:10px;top:-20px;animation:confetti 3s ease-out forwards}
+
+/* ===== SOUND TOGGLE ===== */
+.sound-toggle{position:fixed;bottom:16px;right:16px;z-index:50;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:var(--card-shadow);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+
+/* ===== JUST CATEGORY SELECTOR ===== */
+.just-cat-section{margin-top:12px}
+.just-cat-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-radius:var(--radius-sm);margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.just-cat-row label{flex:1;font-size:0.85rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.just-cat-row .cat-count{font-size:0.7rem;color:#aaa;font-weight:400}
+.just-cat-toggle{width:44px;height:24px;border-radius:12px;background:#ddd;position:relative;transition:background 0.2s;flex-shrink:0}
+.just-cat-toggle.on{background:var(--green)}
+.just-cat-toggle::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.just-cat-toggle.on::after{left:22px}
+.custom-q-area{margin-top:12px;padding:14px;background:#F9F9F9;border-radius:var(--radius-sm);border:2px dashed #ddd}
+.custom-q-area h4{font-size:0.85rem;font-weight:700;margin-bottom:8px;color:var(--red)}
+.custom-q-row{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+.custom-q-row input,.custom-q-row select{padding:8px;border:2px solid #eee;border-radius:8px;font-size:0.8rem}
+.custom-q-row input{flex:1}
+.custom-q-row select{width:80px}
+.custom-q-list{margin-top:8px}
+.custom-q-item{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#fff;border-radius:8px;margin-bottom:4px;font-size:0.8rem}
+.custom-q-item .cq-del{color:var(--red);font-weight:900;cursor:pointer;flex-shrink:0}
+
+@media(max-width:360px){.game-grid{grid-template-columns:1fr}.question-text{font-size:1.2rem}}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <button class="back-btn" id="backBtn" onclick="goBack()">&#9664;</button>
+  <h1>ラヴィット! パーティー</h1>
+  <div class="subtitle">みんなで盛り上がるクイズゲーム集</div>
+  <button class="history-btn" onclick="toggleHistory()" title="対戦履歴">&#128203;</button>
+</header>
+
+<div class="screen active" id="homeScreen">
+  <div class="home-intro">
+    <h2>どのゲームで遊ぶ？</h2>
+    <p>ラヴィット!で紹介された人気ゲーム6選</p>
+  </div>
+  <div class="game-grid">
+    <div class="game-card gc-just" onclick="selectGame('just')"><span class="game-icon">🎯</span><div class="game-name">THEジャスト</div><div class="game-desc">数値がピッタリか当てろ！</div><span class="game-players">2チーム〜</span></div>
+    <div class="game-card gc-haa" onclick="selectGame('haa')"><span class="game-icon">🎭</span><div class="game-name">はぁって言うゲーム</div><div class="game-desc">演技で感情を当てよう</div><span class="game-players">3-8人</span></div>
+    <div class="game-card gc-kata" onclick="selectGame('kata')"><span class="game-icon">🚫</span><div class="game-name">カタカナーシ</div><div class="game-desc">カタカナ禁止で説明！</div><span class="game-players">3-8人</span></div>
+    <div class="game-card gc-ito" onclick="selectGame('ito')"><span class="game-icon">🔢</span><div class="game-name">ito</div><div class="game-desc">数値を言葉で伝える協力</div><span class="game-players">2-10人</span></div>
+    <div class="game-card gc-match" onclick="selectGame('match')"><span class="game-icon">🤝</span><div class="game-name">答えを合わせましょう</div><div class="game-desc">全員の回答を一致させろ</div><span class="game-players">3-10人</span></div>
+    <div class="game-card gc-nan" onclick="selectGame('nan')"><span class="game-icon">💬</span><div class="game-name">ナンテッタ</div><div class="game-desc">キャラのセリフを当てよう</div><span class="game-players">4-8人</span></div>
+  </div>
+  <div id="historyArea"></div>
+</div>
+
+<div class="screen" id="setupScreen">
+  <div class="setup-section">
+    <h3 id="setupTitle">ゲーム設定</h3>
+    <div class="setup-row">
+      <label>プレイモード</label>
+      <div class="mode-selector">
+        <div class="mode-btn selected" onclick="selectMode('pass')" id="modePass"><span class="mode-icon">📱</span><div class="mode-label">1台回し</div><div class="mode-desc">端末を回して遊ぶ</div></div>
+        <div class="mode-btn" onclick="selectMode('host')" id="modeHost"><span class="mode-icon">🖥️</span><div class="mode-label">ホストモード</div><div class="mode-desc">1台で出題管理</div></div>
+      </div>
+    </div>
+    <div class="setup-row"><label>ラウンド数</label><input type="number" id="roundCount" value="5" min="1" max="20"></div>
+    <div class="setup-row"><label>プレイヤー / チーム</label><div id="playerInputs"></div><button class="add-team-btn" onclick="addPlayer()">＋ プレイヤー追加</button></div>
+    <div class="setup-row" id="justCategoryRow" style="display:none">
+      <label>問題カテゴリ（THEジャスト）</label>
+      <div class="just-cat-section" id="justCatSection"></div>
+      <div class="custom-q-area" id="customQArea">
+        <h4>＋ オリジナル問題を追加</h4>
+        <div class="custom-q-row">
+          <input id="cqQuestion" placeholder="例：○○の長さ">
+          <input id="cqValue" placeholder="例：10cm" style="width:80px">
+        </div>
+        <div class="custom-q-row">
+          <select id="cqAnswer"><option value="true">ジャスト</option><option value="false">ジャストじゃない</option></select>
+          <input id="cqActual" placeholder="実際の値" style="width:100px">
+          <button style="padding:8px 14px;border-radius:8px;background:var(--red);color:#fff;font-weight:700;font-size:0.8rem;white-space:nowrap" onclick="addCustomJustQ()">追加</button>
+        </div>
+        <div class="custom-q-list" id="customQList"></div>
+      </div>
+    </div>
+  </div>
+  <button class="start-btn" onclick="showRules()">次へ：ルール確認</button>
+</div>
+
+<div class="screen" id="rulesScreen"></div>
+<div class="screen" id="gameScreen"></div>
+
+<div class="pass-screen" id="passScreen">
+  <div class="pass-icon">📱</div>
+  <div class="pass-text">端末を渡してください</div>
+  <div class="pass-name" id="passPlayerName"></div>
+  <button onclick="closePassScreen()">準備OK！</button>
+</div>
+
+<div class="secret-overlay" id="secretOverlay">
+  <div class="secret-card">
+    <h3 id="secretTitle">あなたのお題</h3>
+    <div class="secret-content" id="secretContent"></div>
+    <div class="secret-hint" id="secretHint"></div>
+    <button onclick="closeSecret()">確認した！</button>
+  </div>
+</div>
+
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-bg"></div>
+  <div class="result-card">
+    <div class="result-icon" id="resultIcon"></div>
+    <div class="result-text" id="resultText"></div>
+    <div class="result-answer" id="resultAnswer"></div>
+    <div class="result-detail" id="resultDetail"></div>
+    <button class="result-next-btn" id="resultNextBtn" onclick="closeResult()">次へ</button>
+  </div>
+</div>
+
+<button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</button>
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+// ===================================================================
+// STATE
+// ===================================================================
+const S={currentGame:null,mode:'pass',players:[],scores:[],round:0,maxRounds:5,currentPlayer:0,phase:'setup',gameData:{},timerInterval:null,timerLeft:0,timerStart:0,timerDuration:0,soundEnabled:true};
+const COLORS=['#FF6B9D','#FF8C42','#4ECDC4','#45B7D1','#A06CD5','#FFD700','#FF4757','#7BED9F','#E056A0','#5FC9F3'];
+const HISTORY_KEY='lavit_party_history';
+
+// ===================================================================
+// SOUND (AudioContext)
+// ===================================================================
+let audioCtx=null;
+function getAudioCtx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+function playTone(freq,duration,type='sine',vol=0.15){
+  if(!S.soundEnabled)return;
+  try{
+    const ctx=getAudioCtx(),o=ctx.createOscillator(),g=ctx.createGain();
+    o.type=type;o.frequency.value=freq;g.gain.value=vol;
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+duration);
+    o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+duration);
+  }catch(e){}
+}
+function sfxCorrect(){playTone(523,0.1);setTimeout(()=>playTone(659,0.1),100);setTimeout(()=>playTone(784,0.2),200)}
+function sfxWrong(){playTone(200,0.3,'sawtooth',0.1)}
+function sfxTick(){playTone(800,0.05,'square',0.05)}
+function sfxWarning(){playTone(440,0.15,'square',0.1);setTimeout(()=>playTone(440,0.15,'square',0.1),200)}
+function sfxFanfare(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,0.3,'triangle',0.12),i*150))}
+function sfxClick(){playTone(600,0.05,'sine',0.08)}
+function toggleSound(){S.soundEnabled=!S.soundEnabled;document.getElementById('soundToggle').textContent=S.soundEnabled?'🔊':'🔇'}
+
+// ===================================================================
+// NAVIGATION & HISTORY API
+// ===================================================================
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('backBtn').classList.toggle('show',id!=='homeScreen');
+}
+function pushState(screen){history.pushState({screen},'','')}
+window.addEventListener('popstate',e=>{
+  if(S.phase==='playing'){if(confirm('ゲームを中断しますか？')){clearTimer();S.phase='setup';showScreen('homeScreen')}else{pushState('game')}}
+  else{showScreen('homeScreen');S.phase='setup'}
+});
+function goBack(){
+  clearTimer();
+  if(S.phase==='playing'){if(confirm('ゲームを中断しますか？')){S.phase='setup';showScreen('homeScreen')}}
+  else{showScreen('homeScreen');S.phase='setup'}
+}
+
+// ===================================================================
+// GAME SELECTION & SETUP
+// ===================================================================
+function selectGame(game){S.currentGame=game;S.phase='setup';setupGameConfig(game);showScreen('setupScreen');pushState('setup')}
+function setupGameConfig(game){
+  const t={just:'🎯 THEジャスト',haa:'🎭 はぁって言うゲーム',kata:'🚫 カタカナーシ',ito:'🔢 ito',match:'🤝 答えを合わせましょう',nan:'💬 ナンテッタ'};
+  document.getElementById('setupTitle').textContent=t[game]||'設定';
+  initPlayerInputs(game);
+  const catRow=document.getElementById('justCategoryRow');
+  if(game==='just'){catRow.style.display='block';renderJustCatSection()}else{catRow.style.display='none'}
+}
+function selectMode(m){S.mode=m;document.getElementById('modePass').classList.toggle('selected',m==='pass');document.getElementById('modeHost').classList.toggle('selected',m==='host')}
+function initPlayerInputs(g){S.players=g==='just'?['チームA','チームB']:['プレイヤー1','プレイヤー2','プレイヤー3'];renderPlayerInputs()}
+function renderPlayerInputs(){
+  document.getElementById('playerInputs').innerHTML=S.players.map((p,i)=>`<div class="player-input-row"><div class="player-num" style="background:${COLORS[i%COLORS.length]}">${i+1}</div><input value="${p}" onchange="S.players[${i}]=this.value" placeholder="名前">${S.players.length>2?`<button class="remove-player" onclick="removePlayer(${i})">✕</button>`:''}</div>`).join('');
+}
+function addPlayer(){if(S.players.length>=10)return;S.players.push(`プレイヤー${S.players.length+1}`);renderPlayerInputs()}
+function removePlayer(i){S.players.splice(i,1);renderPlayerInputs()}
+
+// ===================================================================
+// RULES SCREEN
+// ===================================================================
+const RULES={
+  just:{title:'THEジャスト',color:'var(--red)',steps:['「○○は△△？」という問題が出題されます','提示された数値が【ジャスト（ぴったり）】か【ジャストじゃない】かを予想！','チームで相談してから回答してもOK','30秒以内に回答してください'],scoring:'正解 = +10pt'},
+  haa:{title:'はぁって言うゲーム',color:'var(--pink)',steps:['各プレイヤーにお題の言葉と「感情」が秘密で割り当てられます','順番にその感情で言葉を演じてください','全員の演技が終わったら、誰がどの感情だったか投票！','当てた人も、当てられた人もポイントGET'],scoring:'正解投票 = +5pt / 演技を当てられた = +5pt'},
+  kata:{title:'カタカナーシ',color:'var(--orange)',steps:['説明者にカタカナ語のお題が出されます','カタカナを一切使わずにお題を説明！','他のプレイヤーはお題を当てましょう','60秒以内にクリアを目指せ！'],scoring:'正解者 = +10pt / 説明者 = +5pt'},
+  ito:{title:'ito',color:'var(--green)',steps:['各プレイヤーに1〜100の秘密の数字が配られます','テーマに沿った言葉で自分の数字を表現','例：テーマ「動物の強さ」で数字30なら「猫」など','全員で相談して小さい順に並べ、答え合わせ！'],scoring:'完全正解 = 全員+10pt'},
+  match:{title:'答えを合わせましょう',color:'var(--blue)',steps:['お題が出されます（例：「赤い食べ物と言えば？」）','他の人と相談せずに回答を入力','全員の回答を比較！一致人数が多いほど高得点','みんなの考えることは同じ…？'],scoring:'一致人数 × 5pt（一致者全員に付与）'},
+  nan:{title:'ナンテッタ',color:'var(--purple)',steps:['キャラクターと状況が表示されます','このキャラは何と言った？4つの選択肢から予想！','30秒以内に回答してください','正解すればポイントGET！'],scoring:'正解 = +10pt'},
+};
+
+function showRules(){
+  document.querySelectorAll('#playerInputs input').forEach((inp,i)=>{S.players[i]=inp.value.trim()||`P${i+1}`});
+  S.maxRounds=parseInt(document.getElementById('roundCount').value)||5;
+  const r=RULES[S.currentGame];
+  // Validate round count
+  const maxQ=getMaxQuestions(S.currentGame);
+  if(S.maxRounds>maxQ){S.maxRounds=maxQ;document.getElementById('roundCount').value=maxQ}
+  const rs=document.getElementById('rulesScreen');
+  rs.innerHTML=`
+    <div class="rules-card">
+      <h3 style="color:${r.color}">${r.title}</h3>
+      ${r.steps.map((s,i)=>`<div class="rule-step"><div class="rule-num" style="background:${r.color}">${i+1}</div><div class="rule-text">${s}</div></div>`).join('')}
+      <div class="rule-scoring"><strong>得点：</strong>${r.scoring}</div>
+    </div>
+    <div style="text-align:center;color:#888;font-size:0.85rem;margin-bottom:12px">${S.players.join(' vs ')}｜${S.maxRounds}ラウンド｜${S.mode==='pass'?'1台回し':'ホスト'}モード</div>
+    <button class="start-btn" onclick="startGame()">ゲームスタート！</button>
+  `;
+  showScreen('rulesScreen');pushState('rules');
+}
+
+function getMaxQuestions(g){
+  const m={just:getJustAllQuestions().length,haa:HAA_CARDS.length,kata:KATA_WORDS.length,ito:ITO_THEMES.length,match:MATCH_QUESTIONS.length,nan:NANTETTA_CARDS.length};
+  return m[g]||10;
+}
+
+// ===================================================================
+// GAME START
+// ===================================================================
+function startGame(){
+  S.scores=S.players.map(()=>0);S.round=0;S.currentPlayer=0;S.phase='playing';
+  initGameData();showScreen('gameScreen');pushState('game');nextRound();
+}
+
+// ===================================================================
+// TIMER (Date.now based)
+// ===================================================================
+function startTimer(seconds,onEnd){
+  clearTimer();S.timerDuration=seconds;S.timerStart=Date.now();S.timerLeft=seconds;
+  updateTimerDisplay();
+  S.timerInterval=setInterval(()=>{
+    const elapsed=Math.floor((Date.now()-S.timerStart)/1000);
+    S.timerLeft=Math.max(0,seconds-elapsed);
+    updateTimerDisplay();
+    if(S.timerLeft<=5&&S.timerLeft>0)sfxWarning();
+    if(S.timerLeft<=0){clearTimer();if(onEnd)onEnd()}
+  },250);
+}
+function clearTimer(){if(S.timerInterval)clearInterval(S.timerInterval);S.timerInterval=null}
+function updateTimerDisplay(){
+  const el=document.getElementById('timerDisplay');if(!el)return;
+  el.textContent=S.timerLeft;el.classList.toggle('warning',S.timerLeft<=5);
+  const bar=document.getElementById('timerBarFill');
+  if(bar)bar.style.width=(S.timerLeft/S.timerDuration)*100+'%';
+}
+
+// ===================================================================
+// COMMON UI
+// ===================================================================
+function showPassScreen(pi,cb){document.getElementById('passPlayerName').textContent=S.players[pi];const ps=document.getElementById('passScreen');ps.classList.add('show');ps._cb=cb}
+function closePassScreen(){const ps=document.getElementById('passScreen');ps.classList.remove('show');if(ps._cb)ps._cb()}
+function showSecret(title,content,hint,cb){const o=document.getElementById('secretOverlay');document.getElementById('secretTitle').textContent=title;document.getElementById('secretContent').textContent=content;document.getElementById('secretHint').textContent=hint||'';o.classList.add('show');o._cb=cb}
+function closeSecret(){const o=document.getElementById('secretOverlay');o.classList.remove('show');if(o._cb)o._cb()}
+function showResult(icon,text,answer,detail,cb){
+  document.getElementById('resultIcon').textContent=icon;document.getElementById('resultText').textContent=text;
+  document.getElementById('resultAnswer').textContent=answer;document.getElementById('resultDetail').textContent=detail||'';
+  const btn=document.getElementById('resultNextBtn');btn.classList.remove('enabled');
+  document.getElementById('resultOverlay').classList.add('show');document.getElementById('resultOverlay')._cb=cb;
+  setTimeout(()=>btn.classList.add('enabled'),600);
+}
+function closeResult(){const btn=document.getElementById('resultNextBtn');if(!btn.classList.contains('enabled'))return;document.getElementById('resultOverlay').classList.remove('show');const cb=document.getElementById('resultOverlay')._cb;if(cb)cb()}
+function renderScoreChips(){return S.players.map((p,i)=>`<span class="score-chip" style="background:${COLORS[i%COLORS.length]}">${p}:${S.scores[i]}</span>`).join('')}
+function fireConfetti(){
+  const c=document.getElementById('confettiContainer');c.innerHTML='';
+  const cols=['#FF6B9D','#FF8C42','#FFD700','#4ECDC4','#45B7D1','#A06CD5','#FF4757'];
+  for(let i=0;i<60;i++){const p=document.createElement('div');p.className='confetti-piece';p.style.left=Math.random()*100+'%';p.style.background=cols[Math.floor(Math.random()*cols.length)];p.style.animationDelay=Math.random()*2+'s';p.style.animationDuration=(2+Math.random()*2)+'s';p.style.borderRadius=Math.random()>0.5?'50%':'2px';p.style.width=(6+Math.random()*8)+'px';p.style.height=(6+Math.random()*8)+'px';c.appendChild(p)}
+  setTimeout(()=>c.innerHTML='',4000);
+}
+
+// ===================================================================
+// FINAL RESULT & HISTORY
+// ===================================================================
+function showFinalResult(){
+  clearTimer();sfxFanfare();
+  const sorted=S.players.map((p,i)=>({name:p,score:S.scores[i],color:COLORS[i%COLORS.length]})).sort((a,b)=>b.score-a.score);
+  saveHistory(sorted);
+  const gs=document.getElementById('gameScreen');
+  gs.innerHTML=`<div class="final-screen fade-in">
+    <div class="trophy">🏆</div>
+    <div style="font-size:0.9rem;color:#888;margin-top:10px">優勝</div>
+    <div class="winner-name">${sorted[0].name}</div>
+    <div style="font-size:1.5rem;font-weight:900;color:var(--orange)">${sorted[0].score}pt</div>
+    <div class="podium">
+      ${sorted[1]?`<div class="podium-item second"><div>🥈</div><div style="font-size:0.9rem;margin-top:4px">${sorted[1].name}</div><div style="font-size:0.75rem;opacity:0.8">${sorted[1].score}pt</div></div>`:''}
+      <div class="podium-item first"><div>🥇</div><div style="font-size:0.9rem;margin-top:4px">${sorted[0].name}</div><div style="font-size:0.75rem;opacity:0.8">${sorted[0].score}pt</div></div>
+      ${sorted[2]?`<div class="podium-item third"><div>🥉</div><div style="font-size:0.9rem;margin-top:4px">${sorted[2].name}</div><div style="font-size:0.75rem;opacity:0.8">${sorted[2].score}pt</div></div>`:''}
+    </div>
+    ${sorted.length>3?`<div class="scoreboard"><h3>全順位</h3>${sorted.map((s,i)=>`<div class="score-row"><span style="font-weight:700">${i+1}位 ${s.name}</span><span style="font-weight:900;font-size:1.2rem;color:${s.color}">${s.score}pt</span></div>`).join('')}</div>`:''}
+    <button class="action-btn primary" onclick="showScreen('homeScreen');S.phase='setup'" style="margin-top:24px">ホームに戻る</button>
+    <button class="action-btn green" onclick="startGame()" style="margin-top:8px">もう一回！</button>
+  </div>`;
+  fireConfetti();
+}
+function saveHistory(sorted){
+  try{
+    const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+    const t={just:'THEジャスト',haa:'はぁって言うゲーム',kata:'カタカナーシ',ito:'ito',match:'答えを合わせましょう',nan:'ナンテッタ'};
+    h.unshift({date:new Date().toLocaleDateString('ja-JP'),game:t[S.currentGame],winner:sorted[0].name,scores:sorted.map(s=>({name:s.name,score:s.score}))});
+    if(h.length>20)h.length=20;
+    localStorage.setItem(HISTORY_KEY,JSON.stringify(h));
+  }catch(e){}
+}
+function toggleHistory(){
+  const area=document.getElementById('historyArea');
+  if(area.innerHTML){area.innerHTML='';return}
+  try{
+    const h=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
+    if(!h.length){area.innerHTML='<div class="history-section"><p style="text-align:center;color:#aaa">まだ対戦履歴がありません</p></div>';return}
+    area.innerHTML=`<div class="history-section"><h3 style="font-size:0.9rem;font-weight:800;margin-bottom:12px;text-align:center;color:var(--pink)">対戦履歴</h3>${h.map(r=>`<div class="history-item"><div style="font-weight:700">${r.date} - ${r.game}</div><div style="color:var(--orange)">優勝：${r.winner}</div><div style="font-size:0.8rem;color:#aaa">${r.scores.map(s=>`${s.name}:${s.score}pt`).join(' / ')}</div></div>`).join('')}<button class="action-btn" style="background:var(--red);margin-top:12px;font-size:0.85rem;padding:10px" onclick="if(confirm('履歴を全削除しますか？')){localStorage.removeItem('${HISTORY_KEY}');toggleHistory();toggleHistory()}">履歴をクリア</button></div>`;
+  }catch(e){area.innerHTML=''}
+}
+
+// ===================================================================
+// STRING NORMALIZE (for 答えを合わせましょう)
+// ===================================================================
+function normalize(s){
+  return s.trim().toLowerCase()
+    .replace(/[\u30A1-\u30F6]/g,m=>String.fromCharCode(m.charCodeAt(0)-0x60))
+    .replace(/[\u30F7-\u30FA]/g,m=>String.fromCharCode(m.charCodeAt(0)-0x60))
+    .replace(/\u30FC/g,'ー')
+    .replace(/[！-～]/g,m=>String.fromCharCode(m.charCodeAt(0)-0xFEE0))
+    .replace(/\s+/g,'');
+}
+
+// ===================================================================
+// GAME DATA
+// ===================================================================
+
+// ----- THE JUST: ラヴィット!放送問題 -----
+const JUST_TV_QUESTIONS=[
+  // 2025/10/8 THEジャスト始動回
+  {q:"郵便はがきの横幅",val:"10cm",answer:true,actual:"10.0cm",detail:"10.0cmでジャスト！（ラヴィット!放送問題）",source:"ラヴィット!チーム出題"},
+  // 2025/12/24 THEジャスト2時間SP
+  {q:"PlayStation2が発売された年",val:"2000年",answer:true,actual:"2000年3月4日",detail:"2000年3月4日発売でジャスト！（2時間SP・アスリートチーム出題）",source:"アスリートチーム出題"},
+  {q:"メントスグレープ1本に入っている個数",val:"15個",answer:false,actual:"14個",detail:"14個なのでジャストじゃない！（2時間SP・アイドルチーム出題）",source:"アイドルチーム出題"},
+  {q:"『あしたのジョー』第1話でジョーが登場するコマ目",val:"10コマ目",answer:false,actual:"7コマ目",detail:"7コマ目なのでジャストじゃない！（2時間SP・QuizKnock出題）",source:"QuizKnock出題"},
+  // 放送で確認された問題形式を参考にしたラヴィット!風問題
+  {q:"RADWIMPSの『前前前世』イントロから歌い出しまでの時間",val:"20秒",answer:false,actual:"約23秒",detail:"約23秒なのでジャストじゃない！（2時間SP決勝形式）",source:"決勝ステージ形式"},
+  {q:"aikoの『ボーイフレンド』イントロから歌い出しまでの時間",val:"20秒",answer:false,actual:"約17秒",detail:"約17秒なのでジャストじゃない！（2時間SP決勝形式）",source:"決勝ステージ形式"},
+];
+
+// ----- THE JUST: カテゴリ管理 -----
+const JUST_CATEGORIES={
+  daily:{name:'身近な生活問題',icon:'🏠',enabled:true},
+  tv:{name:'ラヴィット!放送問題',icon:'📺',enabled:true},
+  custom:{name:'オリジナル追加問題',icon:'✏️',enabled:true},
+};
+const CUSTOM_Q_KEY='lavit_just_custom';
+function loadCustomJustQ(){try{return JSON.parse(localStorage.getItem(CUSTOM_Q_KEY)||'[]')}catch(e){return[]}}
+function saveCustomJustQ(arr){try{localStorage.setItem(CUSTOM_Q_KEY,JSON.stringify(arr))}catch(e){}}
+
+function renderJustCatSection(){
+  const cats=JUST_CATEGORIES;const customs=loadCustomJustQ();
+  const counts={daily:JUST_QUESTIONS.length,tv:JUST_TV_QUESTIONS.length,custom:customs.length};
+  document.getElementById('justCatSection').innerHTML=Object.keys(cats).map(k=>`
+    <div class="just-cat-row">
+      <label>${cats[k].icon} ${cats[k].name} <span class="cat-count">(${counts[k]}問)</span></label>
+      <div class="just-cat-toggle ${cats[k].enabled?'on':''}" id="justCat-${k}" onclick="toggleJustCat('${k}')"></div>
+    </div>
+  `).join('');
+  renderCustomQList();
+}
+function toggleJustCat(k){
+  JUST_CATEGORIES[k].enabled=!JUST_CATEGORIES[k].enabled;
+  document.getElementById(`justCat-${k}`).classList.toggle('on',JUST_CATEGORIES[k].enabled);
+}
+function addCustomJustQ(){
+  const q=document.getElementById('cqQuestion').value.trim();
+  const v=document.getElementById('cqValue').value.trim();
+  const a=document.getElementById('cqAnswer').value==='true';
+  const ac=document.getElementById('cqActual').value.trim();
+  if(!q||!v)return;
+  const customs=loadCustomJustQ();
+  customs.push({q,val:v,answer:a,actual:ac||v,detail:a?`${ac||v}でジャスト！（オリジナル問題）`:`${ac||v}なのでジャストじゃない！（オリジナル問題）`});
+  saveCustomJustQ(customs);
+  document.getElementById('cqQuestion').value='';document.getElementById('cqValue').value='';document.getElementById('cqActual').value='';
+  renderJustCatSection();
+}
+function removeCustomJustQ(idx){
+  const customs=loadCustomJustQ();customs.splice(idx,1);saveCustomJustQ(customs);renderJustCatSection();
+}
+function renderCustomQList(){
+  const customs=loadCustomJustQ();
+  document.getElementById('customQList').innerHTML=customs.map((c,i)=>`
+    <div class="custom-q-item"><span style="flex:1">${c.q} = ${c.val} → ${c.answer?'ジャスト':'ジャストじゃない'}</span><span class="cq-del" onclick="removeCustomJustQ(${i})">✕</span></div>
+  `).join('')||(customs.length===0?'<div style="font-size:0.75rem;color:#aaa;text-align:center;padding:4px">まだ追加問題はありません</div>':'');
+}
+function getJustAllQuestions(){
+  let pool=[];
+  if(JUST_CATEGORIES.daily.enabled)pool=pool.concat(JUST_QUESTIONS);
+  if(JUST_CATEGORIES.tv.enabled)pool=pool.concat(JUST_TV_QUESTIONS);
+  if(JUST_CATEGORIES.custom.enabled)pool=pool.concat(loadCustomJustQ());
+  return pool.length>0?pool:[...JUST_QUESTIONS];
+}
+
+// ----- THE JUST (身近な生活圏の問題) -----
+const JUST_QUESTIONS=[
+  // 日常の硬貨・お札
+  {q:"1円玉の直径",val:"2cm",answer:true,actual:"2.0cm",detail:"ぴったり2cmでジャスト！"},
+  {q:"500円玉の直径",val:"2.5cm",answer:false,actual:"2.65cm",detail:"2.65cmなのでジャストじゃない！"},
+  {q:"一万円札の横幅",val:"16cm",answer:true,actual:"16.0cm",detail:"16.0cmでジャスト！"},
+  {q:"千円札の横幅",val:"15cm",answer:true,actual:"15.0cm",detail:"15.0cmでジャスト！"},
+  {q:"五千円札の横幅",val:"15.5cm",answer:true,actual:"15.6cm",detail:"15.6cmなのでジャストじゃない！…と思いきや、実は15.6cm"},
+  {q:"5円玉の穴の直径",val:"5mm",answer:true,actual:"5mm",detail:"5mmでジャスト！"},
+  // 文房具・身近なもの
+  {q:"鉛筆（JIS規格）の長さ",val:"17cm",answer:false,actual:"17.2cm",detail:"17.2cmなのでジャストじゃない！"},
+  {q:"一般的な消しゴム（MONO）の長さ",val:"5cm",answer:false,actual:"約4.3cm",detail:"約4.3cmなのでジャストじゃない！"},
+  {q:"A4用紙の横幅",val:"21cm",answer:true,actual:"21.0cm",detail:"21.0cmでジャスト！"},
+  {q:"A4用紙の縦の長さ",val:"30cm",answer:false,actual:"29.7cm",detail:"29.7cmなのでジャストじゃない！"},
+  {q:"ティッシュペーパー1箱の枚数（一般的）",val:"200枚",answer:false,actual:"150〜200組(300〜400枚)",detail:"組数と枚数が違うのでジャストじゃない！"},
+  // 食べ物・飲み物
+  {q:"卵Mサイズの重さ",val:"60g",answer:false,actual:"58〜64g",detail:"58〜64gの範囲なのでジャストとは言えない！"},
+  {q:"食パン1斤の厚切り枚数",val:"4枚",answer:true,actual:"4枚切り",detail:"4枚切りでジャスト！（厚切りの場合）"},
+  {q:"缶ビール（レギュラー）の容量",val:"350ml",answer:true,actual:"350ml",detail:"350mlでジャスト！"},
+  {q:"ペットボトルの一般的なサイズ",val:"500ml",answer:true,actual:"500ml",detail:"500mlでジャスト！"},
+  {q:"コンビニおにぎりの重さ",val:"100g",answer:true,actual:"約100〜110g",detail:"約100〜110gでほぼジャスト！"},
+  {q:"カップヌードルのお湯の量",val:"300ml",answer:true,actual:"300ml",detail:"300mlでジャスト！"},
+  // 生活・家の中
+  {q:"テレビのリモコンの長さ",val:"20cm",answer:false,actual:"約23cm",detail:"約23cmなのでジャストじゃない！"},
+  {q:"トイレットペーパー1ロールの長さ",val:"50m",answer:false,actual:"約60m（シングル）",detail:"シングルは約60mでジャストじゃない！"},
+  {q:"お風呂の浴槽の標準的な容量",val:"200リットル",answer:true,actual:"約200リットル",detail:"約200リットルでジャスト！"},
+  {q:"エアコンの標準設定温度（冷房）",val:"28℃",answer:true,actual:"28℃（環境省推奨）",detail:"環境省推奨28℃でジャスト！"},
+  // 体・人体
+  {q:"大人の歯の本数",val:"32本",answer:true,actual:"32本（親知らず含む）",detail:"親知らず含めて32本でジャスト！"},
+  {q:"人間の骨の数（成人）",val:"200本",answer:false,actual:"206本",detail:"206本なのでジャストじゃない！"},
+  {q:"人間の体温の平均",val:"36.5℃",answer:false,actual:"約36.6〜37.2℃",detail:"個人差があり約36.6〜37.2℃でジャストじゃない！"},
+  {q:"まばたきの1日の回数",val:"1万回",answer:false,actual:"約1万5千〜2万回",detail:"約1万5千〜2万回でジャストじゃない！"},
+  // 交通・街
+  {q:"横断歩道の白線の幅",val:"45cm",answer:true,actual:"45cm",detail:"45cmでジャスト！"},
+  {q:"信号機の直径",val:"30cm",answer:true,actual:"30cm（一般的）",detail:"一般的なサイズは30cmでジャスト！"},
+  {q:"マンホールの蓋の直径",val:"60cm",answer:true,actual:"60cm（一般的）",detail:"一般的なサイズは60cmでジャスト！"},
+  {q:"自動販売機の缶ジュースの値段（標準）",val:"130円",answer:true,actual:"130円",detail:"標準的には130円でジャスト！"},
+  {q:"郵便ポストの高さ",val:"1m",answer:false,actual:"約1.35m",detail:"約1.35mなのでジャストじゃない！"},
+  // スポーツ・レジャー
+  {q:"サッカーボールの周囲",val:"70cm",answer:false,actual:"68〜70cm",detail:"68〜70cmの規定があり微妙！"},
+  {q:"ボウリングのピンの数",val:"10本",answer:true,actual:"10本",detail:"10本でジャスト！"},
+  {q:"トランプの枚数（ジョーカー除く）",val:"52枚",answer:true,actual:"52枚",detail:"52枚でジャスト！"},
+  {q:"百人一首の歌の数",val:"100首",answer:true,actual:"100首",detail:"100首でジャスト！"},
+  {q:"将棋の駒の総数",val:"40枚",answer:true,actual:"40枚",detail:"40枚でジャスト！"},
+  // 日本の常識
+  {q:"日本の都道府県の数",val:"47",answer:true,actual:"47",detail:"47都道府県でジャスト！"},
+  {q:"東京タワーの高さ",val:"333m",answer:true,actual:"333m",detail:"333mでジャスト！"},
+  {q:"富士山の標高",val:"3776m",answer:true,actual:"3776m",detail:"3776mでジャスト！"},
+  {q:"東京スカイツリーの高さ",val:"634m",answer:true,actual:"634m",detail:"634mでジャスト！"},
+  {q:"琵琶湖の面積",val:"670km²",answer:false,actual:"約670.4km²",detail:"約670.4km²なのでジャストじゃない！"},
+  {q:"日本で一番長いトンネル（青函トンネル）",val:"50km",answer:false,actual:"53.85km",detail:"53.85kmなのでジャストじゃない！"},
+  {q:"日本の祝日の数",val:"16日",answer:true,actual:"16日",detail:"年間16日でジャスト！"},
+  {q:"お年玉の一般的な額（小学校高学年）",val:"3000円",answer:false,actual:"平均5000円前後",detail:"調査によると平均5000円前後でジャストじゃない！"},
+  {q:"ピアノの鍵盤の数",val:"88鍵",answer:true,actual:"88鍵",detail:"88鍵でジャスト！"},
+  {q:"マラソンの距離",val:"42km",answer:false,actual:"42.195km",detail:"42.195kmなのでジャストじゃない！"},
+];
+
+// ----- はぁって言うゲーム -----
+const HAA_CARDS=[
+  {word:"はぁ",emotions:["怒りの「はぁ」","感心の「はぁ」","ぼーっとした「はぁ」","安堵の「はぁ」","驚きの「はぁ」","呆れの「はぁ」"]},
+  {word:"えー",emotions:["驚きの「えー」","不満の「えー」","疑いの「えー」","感動の「えー」","照れの「えー」","悲しみの「えー」"]},
+  {word:"なんで",emotions:["怒りの「なんで」","悲しみの「なんで」","驚きの「なんで」","笑いの「なんで」","困惑の「なんで」","呆れの「なんで」"]},
+  {word:"うん",emotions:["元気な「うん」","眠い「うん」","嫌々の「うん」","力強い「うん」","適当な「うん」","照れた「うん」"]},
+  {word:"やばい",emotions:["嬉しい「やばい」","焦りの「やばい」","恐怖の「やばい」","感動の「やばい」","ドン引きの「やばい」","興奮の「やばい」"]},
+  {word:"すみません",emotions:["謝罪の「すみません」","呼び止める「すみません」","感謝の「すみません」","言い訳の「すみません」","怒りの「すみません」","泣きの「すみません」"]},
+  {word:"好き",emotions:["告白の「好き」","推しへの「好き」","食べ物への「好き」","友達への「好き」","ペットへの「好き」","独り言の「好き」"]},
+  {word:"マジ？",emotions:["驚きの「マジ？」","疑いの「マジ？」","嬉しい「マジ？」","怒りの「マジ？」","呆れの「マジ？」","恐怖の「マジ？」"]},
+  {word:"おはよう",emotions:["元気な「おはよう」","寝起きの「おはよう」","不機嫌な「おはよう」","久しぶりの「おはよう」","小声の「おはよう」","テンション高い「おはよう」"]},
+  {word:"ありがとう",emotions:["心からの「ありがとう」","社交辞令の「ありがとう」","照れた「ありがとう」","泣きながらの「ありがとう」","軽い「ありがとう」","驚きの「ありがとう」"]},
+  {word:"ごめん",emotions:["本気の「ごめん」","軽い「ごめん」","泣きの「ごめん」","照れの「ごめん」","怒りの「ごめん」","ふざけた「ごめん」"]},
+  {word:"いいよ",emotions:["快諾の「いいよ」","渋々の「いいよ」","優しい「いいよ」","怒りの「いいよ」","照れの「いいよ」","冷たい「いいよ」"]},
+  {word:"待って",emotions:["焦りの「待って」","甘えの「待って」","怒りの「待って」","驚きの「待って」","悲しみの「待って」","楽しい「待って」"]},
+  {word:"嘘でしょ",emotions:["驚きの「嘘でしょ」","喜びの「嘘でしょ」","悲しみの「嘘でしょ」","怒りの「嘘でしょ」","呆れの「嘘でしょ」","疑いの「嘘でしょ」"]},
+  {word:"もう",emotions:["怒りの「もう」","照れの「もう」","諦めの「もう」","甘えの「もう」","呆れの「もう」","泣きの「もう」"]},
+];
+
+// ----- カタカナーシ -----
+const KATA_WORDS=[
+  "チョコレート","ハンバーガー","パソコン","テレビ","サッカー","ピアノ","カメラ",
+  "エレベーター","アイスクリーム","ジェットコースター","マラソン","ギター","ドライブ",
+  "コンビニ","レストラン","プレゼント","クリスマス","バレンタイン","ハロウィン",
+  "スマートフォン","インターネット","テーマパーク","アニメーション","ボランティア",
+  "リモコン","シャンプー","マスク","ペットボトル","コーヒー","パジャマ",
+  "カレンダー","タクシー","エスカレーター","トイレ","ソファー","バスケットボール",
+  "テニス","ゴルフ","スキー","キャンプ","バーベキュー","ホテル","マンション",
+  "エアコン","ストレス","ダイエット","ヨガ","ファッション","デザイン",
+  "ロボット","ドローン","プログラミング","アプリ","ゲーム","サングラス",
+  "ネクタイ","ピザ","パスタ","カレー","ラーメン","オムライス","ケーキ","プリン",
+  "ワイン","ビール","ジュース","ミルク","バター","チーズ",
+  "タピオカ","パンケーキ","ドーナツ","マカロン","クロワッサン","サンドイッチ",
+  "スーパーマーケット","ガソリンスタンド","クリーニング","カラオケ","ボウリング",
+  "フィットネス","ヨーグルト","ポテトチップス","マヨネーズ","ケチャップ",
+  "ソース","サラダ","スープ","グラタン","ステーキ","ハンバーグ","コロッケ",
+  "メガネ","イヤホン","キーボード","マウス","ノート","ペン","クリップ",
+  "ティッシュ","タオル","スリッパ",
+];
+
+// ----- ito -----
+const ITO_THEMES=[
+  {theme:"動物の強さ",low:"アリ",high:"ライオン"},
+  {theme:"食べ物の辛さ",low:"牛乳",high:"デスソース"},
+  {theme:"映画の怖さ",low:"トトロ",high:"リング"},
+  {theme:"季節の暑さ",low:"北極",high:"砂漠"},
+  {theme:"乗り物の速さ",low:"カタツムリ",high:"ロケット"},
+  {theme:"音の大きさ",low:"ささやき",high:"ジェット機"},
+  {theme:"値段の高さ",low:"1円ガム",high:"ダイヤの指輪"},
+  {theme:"人気のお菓子",low:"梅干し飴",high:"ポッキー"},
+  {theme:"朝起きたくない度",low:"遠足の日",high:"月曜の朝"},
+  {theme:"テンションの上がるイベント",low:"健康診断",high:"推しのライブ"},
+  {theme:"待ち時間の長さ",low:"自販機",high:"人気テーマパーク"},
+  {theme:"先生に怒られる度",low:"忘れ物",high:"窓ガラスを割る"},
+  {theme:"食べ物の甘さ",low:"レモン",high:"わたあめ"},
+  {theme:"旅行の遠さ",low:"隣の駅",high:"宇宙旅行"},
+  {theme:"リラックス度",low:"面接中",high:"温泉"},
+  {theme:"お母さんに言いにくいこと",low:"おやつ食べた",high:"留年した"},
+  {theme:"夏休みの宿題のやる気",low:"読書感想文",high:"自由研究"},
+  {theme:"デートで行きたい場所",low:"図書館",high:"ディズニーランド"},
+  {theme:"カラオケで盛り上がる曲",low:"演歌",high:"みんなが知ってるアニソン"},
+  {theme:"誕生日プレゼントの嬉しさ",low:"靴下",high:"欲しかったゲーム機"},
+  {theme:"運動の疲れ度",low:"散歩",high:"フルマラソン"},
+  {theme:"日本のお土産の定番度",low:"ご当地キーホルダー",high:"東京ばな奈"},
+  {theme:"告白のドキドキ度",low:"LINEで",high:"直接目を見て"},
+  {theme:"お正月の楽しみ",low:"年賀状書き",high:"お年玉"},
+  {theme:"コンビニの人気商品",low:"耳かき",high:"からあげクン"},
+];
+
+// ----- 答えを合わせましょう -----
+const MATCH_QUESTIONS=[
+  "赤い食べ物と言えば？","朝ごはんの定番と言えば？","夏と言えば？",
+  "日本のお土産と言えば？","デートスポットと言えば？","カラオケの定番曲と言えば？",
+  "コンビニで買うものと言えば？","お正月と言えば？","子供の頃の遊びと言えば？",
+  "お祭りと言えば？","動物園の人気者と言えば？","学校の思い出と言えば？",
+  "温泉地と言えば？","おばあちゃんの味と言えば？","雨の日の過ごし方と言えば？",
+  "100万円あったら？","無人島に持っていくものと言えば？","日本一の山と言えば？",
+  "居酒屋の最初の一杯と言えば？","お弁当のおかずと言えば？",
+  "旅行先として人気の国と言えば？","冬の楽しみと言えば？",
+  "放課後の過ごし方と言えば？","お風呂上がりに飲むものと言えば？",
+  "ストレス解消法と言えば？","おやつの時間に食べるものと言えば？",
+  "日曜日の朝にやることと言えば？","誕生日プレゼントと言えば？",
+  "春の楽しみと言えば？","深夜に食べたくなるものと言えば？",
+  "黄色いものと言えば？","丸いものと言えば？","甘い飲み物と言えば？",
+  "夏の風物詩と言えば？","秋の味覚と言えば？","冬に食べたいものと言えば？",
+  "日本の有名な城と言えば？","お寿司のネタと言えば？","ラーメンの味と言えば？",
+  "日本の人気キャラクターと言えば？","朝の習慣と言えば？","寝る前にすることと言えば？",
+  "白いものと言えば？","柔らかいものと言えば？","いい匂いのものと言えば？",
+  "お母さんの口癖と言えば？","学校の好きな教科と言えば？",
+  "運動会の種目と言えば？","給食の人気メニューと言えば？","文房具と言えば？",
+];
+
+// ----- ナンテッタ -----
+const NANTETTA_CARDS=[
+  {char:"👨‍💼",situation:"上司が部下のデスクに来て一言",answers:["ちょっといい？","例の件どうなった？","今日飲みに行かない？","この資料やり直して"],correct:0},
+  {char:"👶",situation:"赤ちゃんが初めて立った瞬間",answers:["まんま！","やったー！","ばぶー","あー！"],correct:2},
+  {char:"🧑‍🍳",situation:"シェフが料理の味見をして",answers:["塩が足りない","完璧だ！","もう一度作り直しだ","うーん、何かが違う"],correct:1},
+  {char:"👩‍🏫",situation:"先生がテスト用紙を返す時に一言",answers:["よく頑張りました","もう少し頑張りましょう","お母さんに見せてね","これは…すごいわ"],correct:0},
+  {char:"🧙‍♂️",situation:"魔法使いが弟子に言った一言",answers:["まだまだじゃのう","よくぞここまで来た","呪文を間違えるでない","今日は休みじゃ"],correct:2},
+  {char:"👮",situation:"警察官が職務質問で最初の一言",answers:["ちょっとよろしいですか","免許証見せてください","何かお探しですか","こんばんは"],correct:0},
+  {char:"💇‍♀️",situation:"美容師がカット後にお客さんに",answers:["いかがですか？","すごく似合ってます！","短くなりましたね","次はいつ来ますか？"],correct:1},
+  {char:"🎅",situation:"サンタが煙突から降りてきて一言",answers:["メリークリスマス！","狭いな…","いい子にしてたかな？","腰が痛い…"],correct:2},
+  {char:"👨‍⚕️",situation:"お医者さんが検査結果を見て",answers:["問題ありませんよ","少し気になる数値が…","素晴らしい健康体です","もう一度検査しましょう"],correct:0},
+  {char:"🧑‍🚀",situation:"宇宙飛行士が地球を見下ろして",answers:["美しい…","家に帰りたい","小さく見える","写真撮ろう！"],correct:0},
+  {char:"👩‍🎤",situation:"アイドルがファンに向かって",answers:["みんな大好き！","今日も来てくれてありがとう！","声出していくよー！","一緒に歌おう！"],correct:2},
+  {char:"🧓",situation:"おじいちゃんが孫に言った一言",answers:["大きくなったなぁ","お小遣いあげよう","昔はなぁ…","ご飯食べたか？"],correct:0},
+  {char:"🦸",situation:"ヒーローが登場した時の決め台詞",answers:["待たせたな！","悪は許さない！","大丈夫、私が来た！","さあ、始めようか"],correct:2},
+  {char:"👨‍🍳",situation:"ラーメン屋の大将が常連客に",answers:["いつもの？","今日は特別メニューがあるよ","最近見なかったね","いらっしゃい！"],correct:0},
+  {char:"🧑‍💻",situation:"プログラマーが深夜にバグを見つけた時",answers:["なんでだ…","あ！ここか！","もう帰りたい","コーヒーもう一杯…"],correct:1},
+  {char:"🧒",situation:"子供がお母さんのお化粧を見て",answers:["きれい！","誰？","なにしてるの？","わたしもやりたい！"],correct:3},
+  {char:"👴",situation:"おじいちゃんがスマホを初めて触って",answers:["これどうやるの？","文字が小さい！","便利じゃのう","昔はこんなもの…"],correct:0},
+  {char:"🧑‍🎓",situation:"卒業式で親友に最後の一言",answers:["またね","ありがとう","泣くなよ","絶対遊ぼうね"],correct:1},
+  {char:"👩‍🦳",situation:"お母さんが子供の部屋を見て",answers:["片付けなさい！","何この散らかりよう…","今すぐ掃除！","もう知らないからね"],correct:0},
+  {char:"🧑‍🔬",situation:"科学者が実験に成功した瞬間",answers:["やった！","ついに完成だ！","これは大発見だ！","もう一度確認しよう"],correct:2},
+  {char:"🐕",situation:"犬が飼い主の帰宅を出迎えて（心の声）",answers:["待ってた！","ごはんまだ？","どこ行ってたの！","嬉しすぎる！"],correct:0},
+  {char:"👰",situation:"結婚式で新婦が新郎に一言",answers:["幸せにしてね","一生一緒にいようね","泣かないで","ありがとう"],correct:1},
+  {char:"🧑‍🚒",situation:"消防士が火災現場に到着して",answers:["全員避難してください！","状況を報告！","ホース準備！","大丈夫ですか？"],correct:0},
+  {char:"👧",situation:"女の子がサンタさんへの手紙で",answers:["プレゼントください","いい子にしてました","パパとママにも何かお願い","トナカイさん元気？"],correct:0},
+  {char:"🧑‍⚖️",situation:"裁判官がハンマーを叩いて一言",answers:["静粛に！","判決を言い渡す","異議を認めます","休廷！"],correct:0},
+];
+
+// ===================================================================
+// GAME LOGIC
+// ===================================================================
+function initGameData(){
+  const g=S.currentGame;S.gameData={};
+  if(g==='just'){S.gameData.questions=shuffle([...getJustAllQuestions()]).slice(0,S.maxRounds)}
+  else if(g==='haa'){S.gameData.cards=shuffle([...HAA_CARDS]).slice(0,S.maxRounds)}
+  else if(g==='kata'){S.gameData.words=shuffle([...KATA_WORDS]).slice(0,S.maxRounds)}
+  else if(g==='ito'){S.gameData.themes=shuffle([...ITO_THEMES]).slice(0,S.maxRounds)}
+  else if(g==='match'){S.gameData.questions=shuffle([...MATCH_QUESTIONS]).slice(0,S.maxRounds)}
+  else if(g==='nan'){S.gameData.cards=shuffle([...NANTETTA_CARDS]).slice(0,S.maxRounds)}
+}
+
+function nextRound(){
+  if(S.round>=S.maxRounds){showFinalResult();return}
+  const g=S.currentGame;
+  if(g==='just')renderJustRound();else if(g==='haa')renderHaaRound();else if(g==='kata')renderKataRound();
+  else if(g==='ito')renderItoRound();else if(g==='match')renderMatchRound();else if(g==='nan')renderNanRound();
+}
+
+// ===== THEジャスト =====
+function renderJustRound(){
+  const q=S.gameData.questions[S.round];S.gameData.voted={};
+  const gs=document.getElementById('gameScreen');
+  if(S.mode==='pass'){
+    // パス&プレイ: 各チーム個別に回答（非表示対応）
+    S.gameData.justPassIdx=0;
+    justPassNext(q);
+  }else{
+    gs.innerHTML=`
+      <div class="mode-indicator host-mode">🖥️ ホストモード</div>
+      ${topBar()}
+      <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div class="question-text">${q.q}は…</div><div class="just-value">${q.val}</div><div class="question-sub">ジャスト？ ジャストじゃない？</div></div>
+      <div class="timer-display" id="timerDisplay">30</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+      ${S.players.map((p,i)=>`<div style="margin-top:8px"><div style="font-weight:700;font-size:0.85rem;color:${COLORS[i]}">${p}：</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="answer-btn" id="just-${i}-yes" onclick="justVote(${i},true)">⭕ ジャスト！</button><button class="answer-btn" id="just-${i}-no" onclick="justVote(${i},false)">❌ ジャストじゃない</button></div></div>`).join('')}
+      <button class="action-btn primary" onclick="justReveal()" style="margin-top:16px">回答を確認！</button>`;
+    startTimer(30,()=>justReveal());
+  }
+}
+function justPassNext(q){
+  const idx=S.gameData.justPassIdx;
+  if(idx>=S.players.length){justReveal();return}
+  showPassScreen(idx,()=>{
+    const gs=document.getElementById('gameScreen');
+    gs.innerHTML=`
+      <div class="mode-indicator pass-play">📱 ${S.players[idx]}の番</div>
+      ${topBar()}
+      <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div class="question-text">${q.q}は…</div><div class="just-value">${q.val}</div><div class="question-sub">ジャスト？ ジャストじゃない？</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+        <button class="answer-btn" style="padding:20px;font-size:1.1rem" onclick="justPassVote(true)">⭕ ジャスト！</button>
+        <button class="answer-btn" style="padding:20px;font-size:1.1rem" onclick="justPassVote(false)">❌ ジャストじゃない</button>
+      </div>`;
+  });
+}
+function justPassVote(v){sfxClick();S.gameData.voted[S.gameData.justPassIdx]=v;S.gameData.justPassIdx++;justPassNext(S.gameData.questions[S.round])}
+function justVote(pi,v){sfxClick();S.gameData.voted[pi]=v;document.getElementById(`just-${pi}-yes`).classList.toggle('selected',v);document.getElementById(`just-${pi}-no`).classList.toggle('selected',!v)}
+function justReveal(){
+  clearTimer();const q=S.gameData.questions[S.round];
+  S.players.forEach((_,i)=>{if(S.gameData.voted[i]!==undefined&&S.gameData.voted[i]===q.answer)S.scores[i]+=10});
+  if(q.answer)sfxCorrect();else sfxWrong();
+  showResult(q.answer?'⭕':'❌',q.answer?'ジャスト！':'ジャストじゃない！',q.actual,q.detail,()=>{S.round++;nextRound()});
+}
+
+// ===== はぁって言うゲーム =====
+function renderHaaRound(){
+  const card=S.gameData.cards[S.round];S.gameData.assignments={};S.gameData.votes={};
+  const eIdx=shuffle([...Array(card.emotions.length).keys()]);
+  S.players.forEach((_,i)=>{S.gameData.assignments[i]=eIdx[i%card.emotions.length]});
+  if(S.mode==='pass'){S.gameData.currentPerformer=0;S.gameData.performOrder=shuffle([...Array(S.players.length).keys()]);haaShowNextPerformer()}
+  else haaHostStart();
+}
+function haaShowNextPerformer(){
+  const card=S.gameData.cards[S.round],pi=S.gameData.currentPerformer;
+  if(pi>=S.players.length){haaShowVoting();return}
+  const playerIdx=S.gameData.performOrder[pi],emotionIdx=S.gameData.assignments[playerIdx];
+  showPassScreen(playerIdx,()=>{
+    showSecret(`${S.players[playerIdx]}のお題`,`「${card.word}」`,`${card.emotions[emotionIdx]}を演じてください`,()=>{
+      document.getElementById('gameScreen').innerHTML=`
+        <div class="mode-indicator pass-play">📱 演技タイム</div>${topBar()}
+        <div class="question-card pop-in"><div class="question-label">はぁって言うゲーム</div><div class="question-text">${S.players[playerIdx]}の演技タイム！</div><div class="emotion-display">「${card.word}」</div><div class="question-sub">演技者${pi+1}/${S.players.length}</div></div>
+        <button class="action-btn primary" onclick="S.gameData.currentPerformer++;haaShowNextPerformer()">次の演技者へ ▶</button>`;
+    });
+  });
+}
+function haaShowVoting(){S.gameData.votePhasePlayer=0;haaVoteNextPlayer()}
+function haaVoteNextPlayer(){
+  const card=S.gameData.cards[S.round],vi=S.gameData.votePhasePlayer;
+  if(vi>=S.players.length){haaReveal();return}
+  showPassScreen(vi,()=>{
+    document.getElementById('gameScreen').innerHTML=`
+      <div class="mode-indicator pass-play">📱 ${S.players[vi]}の投票</div>${topBar()}
+      <div class="question-card"><div class="question-label">投票タイム</div><div class="question-text">各演技者はどの感情？</div></div>
+      ${S.gameData.performOrder.map(pIdx=>{
+        if(pIdx===vi)return'';
+        return`<div style="background:#fff;border-radius:var(--radius);padding:14px;margin-top:10px;box-shadow:var(--card-shadow)"><div style="font-weight:800;margin-bottom:8px">${S.players[pIdx]}は？</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${card.emotions.map((e,eIdx)=>`<button class="vote-btn" id="hv-${vi}-${pIdx}-${eIdx}" onclick="haaSelectVote(${vi},${pIdx},${eIdx})">${e.replace(/「|」/g,'')}</button>`).join('')}</div></div>`;
+      }).join('')}
+      <button class="action-btn primary" onclick="S.gameData.votePhasePlayer++;haaVoteNextPlayer()" style="margin-top:12px">投票完了 ▶</button>`;
+  });
+}
+function haaSelectVote(voter,target,eIdx){
+  sfxClick();if(!S.gameData.votes[voter])S.gameData.votes[voter]={};S.gameData.votes[voter][target]=eIdx;
+  const card=S.gameData.cards[S.round];card.emotions.forEach((_,i)=>{const b=document.getElementById(`hv-${voter}-${target}-${i}`);if(b)b.classList.toggle('voted',i===eIdx)});
+}
+function haaReveal(){
+  const card=S.gameData.cards[S.round];
+  S.players.forEach((_,vi)=>{const v=S.gameData.votes[vi]||{};Object.keys(v).forEach(t=>{const ti=parseInt(t);if(v[ti]===S.gameData.assignments[ti]){S.scores[vi]+=5;S.scores[ti]+=5}})});
+  sfxCorrect();
+  showResult('🎭','正解発表！',`お題：「${card.word}」`,S.players.map((p,i)=>`${p}：${card.emotions[S.gameData.assignments[i]]}`).join('\n'),()=>{S.round++;nextRound()});
+}
+function haaHostStart(){
+  const card=S.gameData.cards[S.round];
+  document.getElementById('gameScreen').innerHTML=`
+    <div class="mode-indicator host-mode">🖥️ ホストモード</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">はぁって言うゲーム</div><div class="question-text">お題：「${card.word}」</div><div class="question-sub">各プレイヤーの「お題を表示」を個別に見せてください</div></div>
+    ${S.players.map((p,i)=>`<div style="background:#fff;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;box-shadow:var(--card-shadow);display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700;color:${COLORS[i]}">${p}</span><button class="answer-btn" style="padding:8px 16px;font-size:0.8rem;width:auto" onclick="this.textContent='${card.emotions[S.gameData.assignments[i]].replace(/'/g,"\\'")}';this.style.background='#FFF0F5'">お題を表示</button></div>`).join('')}
+    <div style="margin-top:12px;background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--card-shadow)"><h3 style="font-size:0.9rem;margin-bottom:10px;text-align:center">選択肢一覧</h3>${card.emotions.map((e,i)=>`<div style="padding:4px 0;font-size:0.9rem">${i+1}. ${e}</div>`).join('')}</div>
+    <button class="action-btn green" onclick="haaHostVote()" style="margin-top:16px">演技完了→投票へ ▶</button>`;
+}
+function haaHostVote(){
+  const card=S.gameData.cards[S.round];S.gameData.hostVotes={};
+  document.getElementById('gameScreen').innerHTML=`
+    <div class="mode-indicator host-mode">🖥️ 投票タイム</div>
+    <div class="question-card"><div class="question-label">各プレイヤーの感情を当てよう</div><div class="question-text">お題：「${card.word}」</div></div>
+    ${S.players.map((p,pi)=>`<div style="background:#fff;border-radius:var(--radius);padding:14px;margin-top:10px;box-shadow:var(--card-shadow)"><div style="font-weight:800;color:${COLORS[pi]};margin-bottom:8px">${p}は？</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${card.emotions.map((e,eIdx)=>`<button class="vote-btn" id="host-hv-${pi}-${eIdx}" onclick="haaHostSelect(${pi},${eIdx})">${e.replace(/「|」/g,'')}</button>`).join('')}</div></div>`).join('')}
+    <button class="action-btn primary" onclick="haaHostReveal()" style="margin-top:16px">正解を発表！</button>`;
+}
+function haaHostSelect(pi,eIdx){
+  sfxClick();S.gameData.hostVotes[pi]=eIdx;
+  const card=S.gameData.cards[S.round];card.emotions.forEach((_,i)=>{const b=document.getElementById(`host-hv-${pi}-${i}`);if(b)b.classList.toggle('voted',i===eIdx)});
+}
+function haaHostReveal(){
+  const card=S.gameData.cards[S.round];
+  S.players.forEach((_,i)=>{
+    if(S.gameData.hostVotes[i]===S.gameData.assignments[i])S.scores[i]+=10;
+    else S.scores[i]+=5;
+  });
+  sfxCorrect();
+  showResult('🎭','正解発表！',`お題：「${card.word}」`,S.players.map((p,i)=>`${p}：${card.emotions[S.gameData.assignments[i]]}${S.gameData.hostVotes[i]===S.gameData.assignments[i]?' ✓正解！':''}`).join('\n'),()=>{S.round++;nextRound()});
+}
+
+// ===== カタカナーシ =====
+function renderKataRound(){
+  const word=S.gameData.words[S.round],eIdx=S.round%S.players.length;
+  if(S.mode==='pass')showPassScreen(eIdx,()=>showSecret(`${S.players[eIdx]}が説明者！`,word,'カタカナを使わずに説明してください',()=>renderKataPlay(word,eIdx)));
+  else renderKataPlay(word,eIdx);
+}
+function renderKataPlay(word,eIdx){
+  document.getElementById('gameScreen').innerHTML=`
+    <div class="mode-indicator ${S.mode==='pass'?'pass-play':'host-mode'}">${S.mode==='pass'?'📱 1台回し':'🖥️ ホスト'}</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">カタカナーシ</div><div class="question-text">説明者：${S.players[eIdx]}</div>${S.mode==='host'?`<div class="emotion-display">${word}</div><div class="question-sub" style="color:var(--red);font-weight:700">※説明者だけに見せてください</div>`:'<div class="question-sub">カタカナを使わずに説明中…</div>'}</div>
+    <div class="timer-display" id="timerDisplay">60</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;text-align:center">誰が正解した？</div>
+    ${S.players.filter((_,i)=>i!==eIdx).map(p=>{const ri=S.players.indexOf(p);return`<button class="answer-btn" style="margin-bottom:8px;padding:14px" onclick="kataCorrect(${ri},${eIdx})">${p} が正解！</button>`}).join('')}
+    <button class="action-btn gray" onclick="kataTimeUp(${eIdx})" style="margin-top:8px">誰も正解できなかった</button>`;
+  S.gameData.timerDuration=60;startTimer(60,()=>kataTimeUp(eIdx));
+}
+function kataCorrect(gi,ei){clearTimer();S.scores[gi]+=10;S.scores[ei]+=5;sfxCorrect();showResult('🎉',`${S.players[gi]}が正解！`,S.gameData.words[S.round],`説明者${S.players[ei]}にも+5pt`,()=>{S.round++;nextRound()})}
+function kataTimeUp(ei){clearTimer();sfxWrong();showResult('⏰','タイムアップ！',S.gameData.words[S.round],'誰も正解できませんでした',()=>{S.round++;nextRound()})}
+
+// ===== ito =====
+function renderItoRound(){
+  const theme=S.gameData.themes[S.round];S.gameData.numbers={};S.gameData.itoOrder=[];
+  S.players.forEach((_,i)=>{S.gameData.numbers[i]=Math.floor(Math.random()*100)+1});
+  if(S.mode==='pass'){S.gameData.itoPlayerIdx=0;itoShowNextNumber()}else itoHostStart();
+}
+function itoShowNextNumber(){
+  const idx=S.gameData.itoPlayerIdx;if(idx>=S.players.length){itoDiscussion();return}
+  const theme=S.gameData.themes[S.round];
+  showPassScreen(idx,()=>showSecret(`${S.players[idx]}の数字`,S.gameData.numbers[idx].toString(),`テーマ「${theme.theme}」\n（${theme.low}=1, ${theme.high}=100）`,()=>{S.gameData.itoPlayerIdx++;itoShowNextNumber()}));
+}
+function itoDiscussion(){
+  const theme=S.gameData.themes[S.round];
+  document.getElementById('gameScreen').innerHTML=`
+    <div class="mode-indicator pass-play">📱 話し合いタイム</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">ito</div><div class="ito-theme">テーマ：${theme.theme}</div><div class="question-sub">${theme.low}（1）← → ${theme.high}（100）</div><div class="question-text" style="font-size:1rem;margin-top:12px">自分の数字をテーマに沿った言葉で表現して<br>小さい順に並べよう！</div></div>
+    <div class="timer-display" id="timerDisplay">120</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div style="font-weight:700;font-size:0.85rem;text-align:center;margin-bottom:8px">小さい順にタップ（取り消し可）：</div>
+    <div id="itoOrder"></div>
+    <div id="itoRemaining">${S.players.map((p,i)=>`<button class="answer-btn" id="ito-pick-${i}" style="margin-bottom:6px;padding:12px" onclick="itoPickPlayer(${i})">${p}</button>`).join('')}</div>
+    <button class="action-btn green" id="itoRevealBtn" onclick="itoReveal()" style="margin-top:12px;display:none">答え合わせ！</button>`;
+  S.gameData.timerDuration=120;startTimer(120,()=>itoReveal());
+}
+function itoPickPlayer(idx){
+  sfxClick();if(S.gameData.itoOrder.includes(idx))return;S.gameData.itoOrder.push(idx);
+  document.getElementById(`ito-pick-${idx}`).style.display='none';renderItoOrder();
+  if(S.gameData.itoOrder.length===S.players.length)document.getElementById('itoRevealBtn').style.display='block';
+}
+function itoUndoLast(){
+  const last=S.gameData.itoOrder.pop();if(last===undefined)return;
+  document.getElementById(`ito-pick-${last}`).style.display='block';
+  document.getElementById('itoRevealBtn').style.display='none';renderItoOrder();
+}
+function renderItoOrder(){
+  document.getElementById('itoOrder').innerHTML=S.gameData.itoOrder.map((pi,pos)=>`<div class="ito-order-item"><span style="font-weight:900;color:var(--green)">${pos+1}.</span><span style="font-weight:700">${S.players[pi]}</span><button class="ito-undo-btn" onclick="itoUndoLast()">✕</button></div>`).join('');
+}
+function itoReveal(){
+  clearTimer();const order=S.gameData.itoOrder.length===S.players.length?S.gameData.itoOrder:[...Array(S.players.length).keys()];
+  let correct=true;for(let i=1;i<order.length;i++){if(S.gameData.numbers[order[i]]<S.gameData.numbers[order[i-1]]){correct=false;break}}
+  if(correct){S.players.forEach((_,i)=>S.scores[i]+=10);sfxFanfare()}else sfxWrong();
+  const co=[...Array(S.players.length).keys()].sort((a,b)=>S.gameData.numbers[a]-S.gameData.numbers[b]).map((pi,pos)=>`${pos+1}. ${S.players[pi]}：${S.gameData.numbers[pi]}`).join('\n');
+  showResult(correct?'🎉':'😢',correct?'完璧！全員+10pt！':'残念…正しい順番は…',correct?'順番通り！':'',co,()=>{S.round++;nextRound()});
+}
+function itoHostStart(){
+  const theme=S.gameData.themes[S.round];
+  document.getElementById('gameScreen').innerHTML=`
+    <div class="mode-indicator host-mode">🖥️ ホストモード</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">ito</div><div class="ito-theme">テーマ：${theme.theme}</div><div class="question-sub">${theme.low}（1）← → ${theme.high}（100）</div></div>
+    <div style="background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--card-shadow);margin-top:12px"><h3 style="font-size:0.9rem;margin-bottom:12px;text-align:center">各プレイヤーの数字（タップで表示）</h3>
+    ${S.players.map((p,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee"><span style="font-weight:700;color:${COLORS[i]}">${p}</span><button class="answer-btn" style="padding:6px 16px;font-size:0.85rem;width:auto" onclick="this.textContent='${S.gameData.numbers[i]}'">タップで表示</button></div>`).join('')}</div>
+    <button class="action-btn green" onclick="itoDiscussion()" style="margin-top:16px">全員確認 → 話し合いへ ▶</button>`;
+}
+
+// ===== 答えを合わせましょう =====
+function renderMatchRound(){
+  S.gameData.answers={};
+  if(S.mode==='pass'){S.gameData.matchPlayerIdx=0;matchPassNext()}else matchHostStart();
+}
+function matchPassNext(){
+  const q=S.gameData.questions[S.round],idx=S.gameData.matchPlayerIdx;
+  if(idx>=S.players.length){matchReveal();return}
+  showPassScreen(idx,()=>{
+    document.getElementById('gameScreen').innerHTML=`
+      <div class="mode-indicator pass-play">📱 ${S.players[idx]}の番</div>${topBar()}
+      <div class="question-card pop-in"><div class="question-label">答えを合わせましょう</div><div class="question-text">${q}</div></div>
+      <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--card-shadow);margin-top:16px"><h3 style="font-size:0.9rem;font-weight:800;margin-bottom:12px;text-align:center">${S.players[idx]}の回答</h3><input class="text-input" id="matchInput" placeholder="回答を入力…" autocomplete="off"></div>
+      <button class="action-btn primary" onclick="matchSubmit(${idx})" style="margin-top:16px">回答する！</button>`;
+  });
+}
+function matchSubmit(idx){const v=document.getElementById('matchInput').value.trim();if(!v)return;sfxClick();S.gameData.answers[idx]=v;S.gameData.matchPlayerIdx++;matchPassNext()}
+function matchHostStart(){
+  const q=S.gameData.questions[S.round];
+  document.getElementById('gameScreen').innerHTML=`
+    <div class="mode-indicator host-mode">🖥️ ホストモード</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">答えを合わせましょう</div><div class="question-text">${q}</div><div class="question-sub">紙やメモに書いて一斉に見せてください</div></div>
+    <div class="timer-display" id="timerDisplay">30</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div style="background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--card-shadow);margin-top:12px"><h3 style="font-size:0.9rem;margin-bottom:12px;text-align:center">回答を入力</h3>
+    ${S.players.map((p,i)=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span style="font-weight:700;color:${COLORS[i]};min-width:60px;font-size:0.85rem">${p}</span><input class="text-input" id="match-host-${i}" placeholder="回答" style="text-align:left;font-size:0.9rem"></div>`).join('')}</div>
+    <button class="action-btn primary" onclick="matchHostReveal()" style="margin-top:16px">答え合わせ！</button>`;
+  S.gameData.timerDuration=30;startTimer(30,()=>matchHostReveal());
+}
+function matchHostReveal(){clearTimer();S.players.forEach((_,i)=>{const inp=document.getElementById(`match-host-${i}`);if(inp)S.gameData.answers[i]=inp.value.trim()});matchReveal()}
+function matchReveal(){
+  clearTimer();const ans=S.gameData.answers,counts={};
+  Object.values(ans).forEach(a=>{if(a){const k=normalize(a);counts[k]=(counts[k]||0)+1}});
+  const maxC=Math.max(...Object.values(counts),0),best=Object.keys(counts).find(k=>counts[k]===maxC)||'';
+  S.players.forEach((_,i)=>{if(ans[i]&&normalize(ans[i])===best)S.scores[i]+=maxC*5});
+  const allMatch=maxC===S.players.length;if(allMatch)sfxFanfare();else if(maxC>1)sfxCorrect();else sfxWrong();
+  showResult(allMatch?'🎉':maxC>1?'🤝':'😢',allMatch?'全員一致！':`${maxC}人一致！`,best||'（一致なし）',S.players.map((p,i)=>`${p}：${ans[i]||'（未回答）'}`).join('\n'),()=>{S.round++;nextRound()});
+}
+
+// ===== ナンテッタ =====
+function renderNanRound(){
+  const card=S.gameData.cards[S.round];S.gameData.nanVotes={};
+  if(S.mode==='pass'){S.gameData.nanPassIdx=0;nanPassNext(card)}
+  else{
+    document.getElementById('gameScreen').innerHTML=`
+      <div class="mode-indicator host-mode">🖥️ ホストモード</div>${topBar()}
+      <div class="question-card pop-in"><div class="question-label">ナンテッタ</div><div class="nantetta-scene"><div class="nantetta-char">${card.char}</div><div class="nantetta-situation">${card.situation}</div><div class="speech-bubble">❓❓❓</div></div></div>
+      <div class="timer-display" id="timerDisplay">30</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+      ${S.players.map((p,i)=>`<div style="margin-top:8px"><div style="font-weight:700;font-size:0.85rem;color:${COLORS[i]}">${p}：</div><div style="display:grid;gap:6px">${card.answers.map((a,aIdx)=>`<button class="answer-btn" id="nan-${i}-${aIdx}" onclick="nanVote(${i},${aIdx})" style="padding:10px;font-size:0.9rem">${a}</button>`).join('')}</div></div>`).join('')}
+      <button class="action-btn primary" onclick="nanReveal()" style="margin-top:16px">答え合わせ！</button>`;
+    S.gameData.timerDuration=30;startTimer(30,()=>nanReveal());
+  }
+}
+function nanPassNext(card){
+  const idx=S.gameData.nanPassIdx;if(idx>=S.players.length){nanReveal();return}
+  showPassScreen(idx,()=>{
+    document.getElementById('gameScreen').innerHTML=`
+      <div class="mode-indicator pass-play">📱 ${S.players[idx]}の番</div>${topBar()}
+      <div class="question-card pop-in"><div class="question-label">ナンテッタ</div><div class="nantetta-scene"><div class="nantetta-char">${card.char}</div><div class="nantetta-situation">${card.situation}</div><div class="speech-bubble">❓❓❓</div></div><div class="question-text" style="font-size:1rem;margin-top:12px">何て言った？</div></div>
+      <div style="display:grid;gap:8px;margin-top:12px">${card.answers.map((a,aIdx)=>`<button class="answer-btn" style="padding:14px;font-size:1rem" onclick="nanPassVote(${idx},${aIdx})">${a}</button>`).join('')}</div>`;
+  });
+}
+function nanPassVote(pi,ai){sfxClick();S.gameData.nanVotes[pi]=ai;S.gameData.nanPassIdx++;nanPassNext(S.gameData.cards[S.round])}
+function nanVote(pi,ai){
+  sfxClick();S.gameData.nanVotes[pi]=ai;
+  const card=S.gameData.cards[S.round];
+  card.answers.forEach((_,aIdx)=>{const b=document.getElementById(`nan-${pi}-${aIdx}`);if(b){if(aIdx===ai){b.classList.add('voted-hidden');b.textContent='回答済み ✓'}else{b.style.display='none'}}});
+}
+function nanReveal(){
+  clearTimer();const card=S.gameData.cards[S.round],ci=card.correct;
+  S.players.forEach((_,i)=>{if(S.gameData.nanVotes[i]===ci)S.scores[i]+=10});
+  const cp=S.players.filter((_,i)=>S.gameData.nanVotes[i]===ci);
+  if(cp.length>0)sfxCorrect();else sfxWrong();
+  showResult('💬','正解はこれ！',card.answers[ci],cp.length>0?`正解者：${cp.join('、')}`:'だれも正解できませんでした…',()=>{S.round++;nextRound()});
+}
+
+// ===== HELPERS =====
+function topBar(){return`<div class="game-top-bar"><div class="round-info">R<strong>${S.round+1}</strong>/${S.maxRounds}</div><div class="score-chips">${renderScoreChips()}</div></div>`}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+</script>
+</body>
+</html>
