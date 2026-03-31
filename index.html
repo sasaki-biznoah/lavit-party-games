@@ -293,7 +293,7 @@ input,textarea{font-family:inherit;font-size:16px}
           <input id="cqValue" placeholder="例：10cm" style="width:80px">
         </div>
         <div class="custom-q-row">
-          <select id="cqAnswer"><option value="true">ジャスト</option><option value="false">ジャストじゃない</option></select>
+          <select id="cqAnswer"><option value="just">ジャスト</option><option value="high">ハイ(実際はもっと高い)</option><option value="low">ロー(実際はもっと低い)</option></select>
           <input id="cqActual" placeholder="実際の値" style="width:100px">
           <button style="padding:8px 14px;border-radius:8px;background:var(--red);color:#fff;font-weight:700;font-size:0.8rem;white-space:nowrap" onclick="addCustomJustQ()">追加</button>
         </div>
@@ -409,7 +409,7 @@ function removePlayer(i){S.players.splice(i,1);renderPlayerInputs()}
 // RULES SCREEN
 // ===================================================================
 const RULES={
-  just:{title:'THEジャスト',color:'var(--red)',steps:['「○○は△△？」という問題が出題されます','提示された数値が【ジャスト（ぴったり）】か【ジャストじゃない】かを予想！','チームで相談してから回答してもOK','30秒以内に回答してください'],scoring:'正解 = +10pt'},
+  just:{title:'THEジャスト',color:'var(--red)',steps:['「○○は△△？」という問題が出題されます','提示された数値が【ジャスト（ぴったり）】か【ハイ（実際はもっと高い）】か【ロー（実際はもっと低い）】かを3択で予想！','チームで相談してから回答してもOK','30秒以内に回答してください'],scoring:'正解 = +10pt'},
   haa:{title:'はぁって言うゲーム',color:'var(--pink)',steps:['各プレイヤーにお題の言葉と「感情」が秘密で割り当てられます','順番にその感情で言葉を演じてください','全員の演技が終わったら、誰がどの感情だったか投票！','当てた人も、当てられた人もポイントGET'],scoring:'正解投票 = +5pt / 演技を当てられた = +5pt'},
   kata:{title:'カタカナーシ',color:'var(--orange)',steps:['説明者にカタカナ語のお題が出されます','カタカナを一切使わずにお題を説明！','他のプレイヤーはお題を当てましょう','60秒以内にクリアを目指せ！'],scoring:'正解者 = +10pt / 説明者 = +5pt'},
   ito:{title:'ito',color:'var(--green)',steps:['各プレイヤーに1〜100の秘密の数字が配られます','テーマに沿った言葉で自分の数字を表現','例：テーマ「動物の強さ」で数字30なら「猫」など','全員で相談して小さい順に並べ、答え合わせ！'],scoring:'完全正解 = 全員+10pt'},
@@ -557,14 +557,13 @@ function normalize(s){
 // ----- THE JUST: ラヴィット!放送問題 -----
 const JUST_TV_QUESTIONS=[
   // 2025/10/8 THEジャスト始動回
-  {q:"郵便はがきの横幅",val:"10cm",answer:true,actual:"10.0cm",detail:"10.0cmでジャスト！（ラヴィット!放送問題）",source:"ラヴィット!チーム出題"},
+  {q:"郵便はがきの横幅",val:"10cm",answer:"just",actual:"10.0cm",detail:"10.0cmでジャスト！（ラヴィット!放送問題）",source:"ラヴィット!チーム出題"},
   // 2025/12/24 THEジャスト2時間SP
-  {q:"PlayStation2が発売された年",val:"2000年",answer:true,actual:"2000年3月4日",detail:"2000年3月4日発売でジャスト！（2時間SP・アスリートチーム出題）",source:"アスリートチーム出題"},
-  {q:"メントスグレープ1本に入っている個数",val:"15個",answer:false,actual:"14個",detail:"14個なのでジャストじゃない！（2時間SP・アイドルチーム出題）",source:"アイドルチーム出題"},
-  {q:"『あしたのジョー』第1話でジョーが登場するコマ目",val:"10コマ目",answer:false,actual:"7コマ目",detail:"7コマ目なのでジャストじゃない！（2時間SP・QuizKnock出題）",source:"QuizKnock出題"},
-  // 放送で確認された問題形式を参考にしたラヴィット!風問題
-  {q:"RADWIMPSの『前前前世』イントロから歌い出しまでの時間",val:"20秒",answer:false,actual:"約23秒",detail:"約23秒なのでジャストじゃない！（2時間SP決勝形式）",source:"決勝ステージ形式"},
-  {q:"aikoの『ボーイフレンド』イントロから歌い出しまでの時間",val:"20秒",answer:false,actual:"約17秒",detail:"約17秒なのでジャストじゃない！（2時間SP決勝形式）",source:"決勝ステージ形式"},
+  {q:"PlayStation2が発売された年",val:"2000年",answer:"just",actual:"2000年3月4日",detail:"2000年3月4日発売でジャスト！（2時間SP・アスリートチーム出題）",source:"アスリートチーム出題"},
+  {q:"メントスグレープ1本に入っている個数",val:"15個",answer:"low",actual:"14個",detail:"実際は14個でロー！（2時間SP・アイドルチーム出題）",source:"アイドルチーム出題"},
+  {q:"『あしたのジョー』第1話でジョーが登場するコマ目",val:"10コマ目",answer:"low",actual:"7コマ目",detail:"実際は7コマ目でロー！（2時間SP・QuizKnock出題）",source:"QuizKnock出題"},
+  {q:"RADWIMPSの『前前前世』イントロから歌い出しまでの時間",val:"20秒",answer:"high",actual:"約23秒",detail:"実際は約23秒でハイ！（2時間SP決勝形式）",source:"決勝ステージ形式"},
+  {q:"aikoの『ボーイフレンド』イントロから歌い出しまでの時間",val:"20秒",answer:"low",actual:"約17秒",detail:"実際は約17秒でロー！（2時間SP決勝形式）",source:"決勝ステージ形式"},
 ];
 
 // ----- THE JUST: カテゴリ管理 -----
@@ -595,11 +594,12 @@ function toggleJustCat(k){
 function addCustomJustQ(){
   const q=document.getElementById('cqQuestion').value.trim();
   const v=document.getElementById('cqValue').value.trim();
-  const a=document.getElementById('cqAnswer').value==='true';
+  const a=document.getElementById('cqAnswer').value;
   const ac=document.getElementById('cqActual').value.trim();
   if(!q||!v)return;
   const customs=loadCustomJustQ();
-  customs.push({q,val:v,answer:a,actual:ac||v,detail:a?`${ac||v}でジャスト！（オリジナル問題）`:`${ac||v}なのでジャストじゃない！（オリジナル問題）`});
+  const dlabel={just:'ジャスト',high:'ハイ（もっと高い）',low:'ロー（もっと低い）'};
+  customs.push({q,val:v,answer:a,actual:ac||v,detail:`${ac||v}で${dlabel[a]}！（オリジナル問題）`});
   saveCustomJustQ(customs);
   document.getElementById('cqQuestion').value='';document.getElementById('cqValue').value='';document.getElementById('cqActual').value='';
   renderJustCatSection();
@@ -610,7 +610,7 @@ function removeCustomJustQ(idx){
 function renderCustomQList(){
   const customs=loadCustomJustQ();
   document.getElementById('customQList').innerHTML=customs.map((c,i)=>`
-    <div class="custom-q-item"><span style="flex:1">${c.q} = ${c.val} → ${c.answer?'ジャスト':'ジャストじゃない'}</span><span class="cq-del" onclick="removeCustomJustQ(${i})">✕</span></div>
+    <div class="custom-q-item"><span style="flex:1">${c.q} = ${c.val} → ${{just:'ジャスト',high:'ハイ',low:'ロー'}[c.answer]||c.answer}</span><span class="cq-del" onclick="removeCustomJustQ(${i})">✕</span></div>
   `).join('')||(customs.length===0?'<div style="font-size:0.75rem;color:#aaa;text-align:center;padding:4px">まだ追加問題はありません</div>':'');
 }
 function getJustAllQuestions(){
@@ -624,58 +624,58 @@ function getJustAllQuestions(){
 // ----- THE JUST (身近な生活圏の問題) -----
 const JUST_QUESTIONS=[
   // 日常の硬貨・お札
-  {q:"1円玉の直径",val:"2cm",answer:true,actual:"2.0cm",detail:"ぴったり2cmでジャスト！"},
-  {q:"500円玉の直径",val:"2.5cm",answer:false,actual:"2.65cm",detail:"2.65cmなのでジャストじゃない！"},
-  {q:"一万円札の横幅",val:"16cm",answer:true,actual:"16.0cm",detail:"16.0cmでジャスト！"},
-  {q:"千円札の横幅",val:"15cm",answer:true,actual:"15.0cm",detail:"15.0cmでジャスト！"},
-  {q:"五千円札の横幅",val:"15.5cm",answer:true,actual:"15.6cm",detail:"15.6cmなのでジャストじゃない！…と思いきや、実は15.6cm"},
-  {q:"5円玉の穴の直径",val:"5mm",answer:true,actual:"5mm",detail:"5mmでジャスト！"},
+  {q:"1円玉の直径",val:"2cm",answer:"just",actual:"2.0cm",detail:"ぴったり2cmでジャスト！"},
+  {q:"500円玉の直径",val:"2.5cm",answer:"high",actual:"2.65cm",detail:"実際は2.65cmでハイ！"},
+  {q:"一万円札の横幅",val:"16cm",answer:"just",actual:"16.0cm",detail:"16.0cmでジャスト！"},
+  {q:"千円札の横幅",val:"15cm",answer:"just",actual:"15.0cm",detail:"15.0cmでジャスト！"},
+  {q:"五千円札の横幅",val:"15.5cm",answer:"high",actual:"15.6cm",detail:"実際は15.6cmでハイ！"},
+  {q:"5円玉の穴の直径",val:"5mm",answer:"just",actual:"5mm",detail:"5mmでジャスト！"},
   // 文房具・身近なもの
-  {q:"鉛筆（JIS規格）の長さ",val:"17cm",answer:false,actual:"17.2cm",detail:"17.2cmなのでジャストじゃない！"},
-  {q:"一般的な消しゴム（MONO）の長さ",val:"5cm",answer:false,actual:"約4.3cm",detail:"約4.3cmなのでジャストじゃない！"},
-  {q:"A4用紙の横幅",val:"21cm",answer:true,actual:"21.0cm",detail:"21.0cmでジャスト！"},
-  {q:"A4用紙の縦の長さ",val:"30cm",answer:false,actual:"29.7cm",detail:"29.7cmなのでジャストじゃない！"},
-  {q:"ティッシュペーパー1箱の枚数（一般的）",val:"200枚",answer:false,actual:"150〜200組(300〜400枚)",detail:"組数と枚数が違うのでジャストじゃない！"},
+  {q:"鉛筆（JIS規格）の長さ",val:"17cm",answer:"high",actual:"17.2cm",detail:"実際は17.2cmでハイ！"},
+  {q:"一般的な消しゴム（MONO）の長さ",val:"5cm",answer:"low",actual:"約4.3cm",detail:"実際は約4.3cmでロー！"},
+  {q:"A4用紙の横幅",val:"21cm",answer:"just",actual:"21.0cm",detail:"21.0cmでジャスト！"},
+  {q:"A4用紙の縦の長さ",val:"30cm",answer:"low",actual:"29.7cm",detail:"実際は29.7cmでロー！"},
+  {q:"ティッシュペーパー1箱の枚数（一般的）",val:"200枚",answer:"high",actual:"150〜200組(300〜400枚)",detail:"組数と枚数が違い、実際は300〜400枚でハイ！"},
   // 食べ物・飲み物
-  {q:"卵Mサイズの重さ",val:"60g",answer:false,actual:"58〜64g",detail:"58〜64gの範囲なのでジャストとは言えない！"},
-  {q:"食パン1斤の厚切り枚数",val:"4枚",answer:true,actual:"4枚切り",detail:"4枚切りでジャスト！（厚切りの場合）"},
-  {q:"缶ビール（レギュラー）の容量",val:"350ml",answer:true,actual:"350ml",detail:"350mlでジャスト！"},
-  {q:"ペットボトルの一般的なサイズ",val:"500ml",answer:true,actual:"500ml",detail:"500mlでジャスト！"},
-  {q:"コンビニおにぎりの重さ",val:"100g",answer:true,actual:"約100〜110g",detail:"約100〜110gでほぼジャスト！"},
-  {q:"カップヌードルのお湯の量",val:"300ml",answer:true,actual:"300ml",detail:"300mlでジャスト！"},
+  {q:"卵Mサイズの重さ",val:"60g",answer:"just",actual:"58〜64g",detail:"58〜64gの範囲で約60g、ほぼジャスト！"},
+  {q:"食パン1斤の厚切り枚数",val:"4枚",answer:"just",actual:"4枚切り",detail:"4枚切りでジャスト！（厚切りの場合）"},
+  {q:"缶ビール（レギュラー）の容量",val:"350ml",answer:"just",actual:"350ml",detail:"350mlでジャスト！"},
+  {q:"ペットボトルの一般的なサイズ",val:"500ml",answer:"just",actual:"500ml",detail:"500mlでジャスト！"},
+  {q:"コンビニおにぎりの重さ",val:"100g",answer:"just",actual:"約100〜110g",detail:"約100〜110gでほぼジャスト！"},
+  {q:"カップヌードルのお湯の量",val:"300ml",answer:"just",actual:"300ml",detail:"300mlでジャスト！"},
   // 生活・家の中
-  {q:"テレビのリモコンの長さ",val:"20cm",answer:false,actual:"約23cm",detail:"約23cmなのでジャストじゃない！"},
-  {q:"トイレットペーパー1ロールの長さ",val:"50m",answer:false,actual:"約60m（シングル）",detail:"シングルは約60mでジャストじゃない！"},
-  {q:"お風呂の浴槽の標準的な容量",val:"200リットル",answer:true,actual:"約200リットル",detail:"約200リットルでジャスト！"},
-  {q:"エアコンの標準設定温度（冷房）",val:"28℃",answer:true,actual:"28℃（環境省推奨）",detail:"環境省推奨28℃でジャスト！"},
+  {q:"テレビのリモコンの長さ",val:"20cm",answer:"high",actual:"約23cm",detail:"実際は約23cmでハイ！"},
+  {q:"トイレットペーパー1ロールの長さ",val:"50m",answer:"high",actual:"約60m（シングル）",detail:"実際はシングル約60mでハイ！"},
+  {q:"お風呂の浴槽の標準的な容量",val:"200リットル",answer:"just",actual:"約200リットル",detail:"約200リットルでジャスト！"},
+  {q:"エアコンの標準設定温度（冷房）",val:"28℃",answer:"just",actual:"28℃（環境省推奨）",detail:"環境省推奨28℃でジャスト！"},
   // 体・人体
-  {q:"大人の歯の本数",val:"32本",answer:true,actual:"32本（親知らず含む）",detail:"親知らず含めて32本でジャスト！"},
-  {q:"人間の骨の数（成人）",val:"200本",answer:false,actual:"206本",detail:"206本なのでジャストじゃない！"},
-  {q:"人間の体温の平均",val:"36.5℃",answer:false,actual:"約36.6〜37.2℃",detail:"個人差があり約36.6〜37.2℃でジャストじゃない！"},
-  {q:"まばたきの1日の回数",val:"1万回",answer:false,actual:"約1万5千〜2万回",detail:"約1万5千〜2万回でジャストじゃない！"},
+  {q:"大人の歯の本数",val:"32本",answer:"just",actual:"32本（親知らず含む）",detail:"親知らず含めて32本でジャスト！"},
+  {q:"人間の骨の数（成人）",val:"200本",answer:"high",actual:"206本",detail:"実際は206本でハイ！"},
+  {q:"人間の体温の平均",val:"36.5℃",answer:"high",actual:"約36.6〜37.2℃",detail:"実際は約36.6〜37.2℃でハイ！"},
+  {q:"まばたきの1日の回数",val:"1万回",answer:"high",actual:"約1万5千〜2万回",detail:"実際は約1万5千〜2万回でハイ！"},
   // 交通・街
-  {q:"横断歩道の白線の幅",val:"45cm",answer:true,actual:"45cm",detail:"45cmでジャスト！"},
-  {q:"信号機の直径",val:"30cm",answer:true,actual:"30cm（一般的）",detail:"一般的なサイズは30cmでジャスト！"},
-  {q:"マンホールの蓋の直径",val:"60cm",answer:true,actual:"60cm（一般的）",detail:"一般的なサイズは60cmでジャスト！"},
-  {q:"自動販売機の缶ジュースの値段（標準）",val:"130円",answer:true,actual:"130円",detail:"標準的には130円でジャスト！"},
-  {q:"郵便ポストの高さ",val:"1m",answer:false,actual:"約1.35m",detail:"約1.35mなのでジャストじゃない！"},
+  {q:"横断歩道の白線の幅",val:"45cm",answer:"just",actual:"45cm",detail:"45cmでジャスト！"},
+  {q:"信号機の直径",val:"30cm",answer:"just",actual:"30cm（一般的）",detail:"一般的なサイズは30cmでジャスト！"},
+  {q:"マンホールの蓋の直径",val:"60cm",answer:"just",actual:"60cm（一般的）",detail:"一般的なサイズは60cmでジャスト！"},
+  {q:"自動販売機の缶ジュースの値段（標準）",val:"130円",answer:"just",actual:"130円",detail:"標準的には130円でジャスト！"},
+  {q:"郵便ポストの高さ",val:"1m",answer:"high",actual:"約1.35m",detail:"実際は約1.35mでハイ！"},
   // スポーツ・レジャー
-  {q:"サッカーボールの周囲",val:"70cm",answer:false,actual:"68〜70cm",detail:"68〜70cmの規定があり微妙！"},
-  {q:"ボウリングのピンの数",val:"10本",answer:true,actual:"10本",detail:"10本でジャスト！"},
-  {q:"トランプの枚数（ジョーカー除く）",val:"52枚",answer:true,actual:"52枚",detail:"52枚でジャスト！"},
-  {q:"百人一首の歌の数",val:"100首",answer:true,actual:"100首",detail:"100首でジャスト！"},
-  {q:"将棋の駒の総数",val:"40枚",answer:true,actual:"40枚",detail:"40枚でジャスト！"},
+  {q:"サッカーボールの周囲",val:"70cm",answer:"low",actual:"68〜70cm",detail:"規定は68〜70cmで提示値はギリギリロー寄り！"},
+  {q:"ボウリングのピンの数",val:"10本",answer:"just",actual:"10本",detail:"10本でジャスト！"},
+  {q:"トランプの枚数（ジョーカー除く）",val:"52枚",answer:"just",actual:"52枚",detail:"52枚でジャスト！"},
+  {q:"百人一首の歌の数",val:"100首",answer:"just",actual:"100首",detail:"100首でジャスト！"},
+  {q:"将棋の駒の総数",val:"40枚",answer:"just",actual:"40枚",detail:"40枚でジャスト！"},
   // 日本の常識
-  {q:"日本の都道府県の数",val:"47",answer:true,actual:"47",detail:"47都道府県でジャスト！"},
-  {q:"東京タワーの高さ",val:"333m",answer:true,actual:"333m",detail:"333mでジャスト！"},
-  {q:"富士山の標高",val:"3776m",answer:true,actual:"3776m",detail:"3776mでジャスト！"},
-  {q:"東京スカイツリーの高さ",val:"634m",answer:true,actual:"634m",detail:"634mでジャスト！"},
-  {q:"琵琶湖の面積",val:"670km²",answer:false,actual:"約670.4km²",detail:"約670.4km²なのでジャストじゃない！"},
-  {q:"日本で一番長いトンネル（青函トンネル）",val:"50km",answer:false,actual:"53.85km",detail:"53.85kmなのでジャストじゃない！"},
-  {q:"日本の祝日の数",val:"16日",answer:true,actual:"16日",detail:"年間16日でジャスト！"},
-  {q:"お年玉の一般的な額（小学校高学年）",val:"3000円",answer:false,actual:"平均5000円前後",detail:"調査によると平均5000円前後でジャストじゃない！"},
-  {q:"ピアノの鍵盤の数",val:"88鍵",answer:true,actual:"88鍵",detail:"88鍵でジャスト！"},
-  {q:"マラソンの距離",val:"42km",answer:false,actual:"42.195km",detail:"42.195kmなのでジャストじゃない！"},
+  {q:"日本の都道府県の数",val:"47",answer:"just",actual:"47",detail:"47都道府県でジャスト！"},
+  {q:"東京タワーの高さ",val:"333m",answer:"just",actual:"333m",detail:"333mでジャスト！"},
+  {q:"富士山の標高",val:"3776m",answer:"just",actual:"3776m",detail:"3776mでジャスト！"},
+  {q:"東京スカイツリーの高さ",val:"634m",answer:"just",actual:"634m",detail:"634mでジャスト！"},
+  {q:"琵琶湖の面積",val:"670km²",answer:"high",actual:"約670.4km²",detail:"実際は約670.4km²でハイ！"},
+  {q:"日本で一番長いトンネル（青函トンネル）",val:"50km",answer:"high",actual:"53.85km",detail:"実際は53.85kmでハイ！"},
+  {q:"日本の祝日の数",val:"16日",answer:"just",actual:"16日",detail:"年間16日でジャスト！"},
+  {q:"お年玉の一般的な額（小学校高学年）",val:"3000円",answer:"high",actual:"平均5000円前後",detail:"実際は平均5000円前後でハイ！"},
+  {q:"ピアノの鍵盤の数",val:"88鍵",answer:"just",actual:"88鍵",detail:"88鍵でジャスト！"},
+  {q:"マラソンの距離",val:"42km",answer:"high",actual:"42.195km",detail:"実際は42.195kmでハイ！"},
 ];
 
 // ----- はぁって言うゲーム -----
@@ -831,9 +831,9 @@ function renderJustRound(){
     gs.innerHTML=`
       <div class="mode-indicator host-mode">🖥️ ホストモード</div>
       ${topBar()}
-      <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div class="question-text">${q.q}は…</div><div class="just-value">${q.val}</div><div class="question-sub">ジャスト？ ジャストじゃない？</div></div>
+      <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div class="question-text">${q.q}は…</div><div class="just-value">${q.val}</div><div class="question-sub">ジャスト？ ハイ？ ロー？</div></div>
       <div class="timer-display" id="timerDisplay">30</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
-      ${S.players.map((p,i)=>`<div style="margin-top:8px"><div style="font-weight:700;font-size:0.85rem;color:${COLORS[i]}">${p}：</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="answer-btn" id="just-${i}-yes" onclick="justVote(${i},true)">⭕ ジャスト！</button><button class="answer-btn" id="just-${i}-no" onclick="justVote(${i},false)">❌ ジャストじゃない</button></div></div>`).join('')}
+      ${S.players.map((p,i)=>`<div style="margin-top:8px"><div style="font-weight:700;font-size:0.85rem;color:${COLORS[i]}">${p}：</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px"><button class="answer-btn" id="just-${i}-just" onclick="justVote(${i},'just')" style="font-size:0.9rem;padding:12px">⭕ ジャスト</button><button class="answer-btn" id="just-${i}-high" onclick="justVote(${i},'high')" style="font-size:0.9rem;padding:12px">🔺 ハイ</button><button class="answer-btn" id="just-${i}-low" onclick="justVote(${i},'low')" style="font-size:0.9rem;padding:12px">🔻 ロー</button></div></div>`).join('')}
       <button class="action-btn primary" onclick="justReveal()" style="margin-top:16px">回答を確認！</button>`;
     startTimer(30,()=>justReveal());
   }
@@ -846,20 +846,22 @@ function justPassNext(q){
     gs.innerHTML=`
       <div class="mode-indicator pass-play">📱 ${S.players[idx]}の番</div>
       ${topBar()}
-      <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div class="question-text">${q.q}は…</div><div class="just-value">${q.val}</div><div class="question-sub">ジャスト？ ジャストじゃない？</div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
-        <button class="answer-btn" style="padding:20px;font-size:1.1rem" onclick="justPassVote(true)">⭕ ジャスト！</button>
-        <button class="answer-btn" style="padding:20px;font-size:1.1rem" onclick="justPassVote(false)">❌ ジャストじゃない</button>
+      <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div class="question-text">${q.q}は…</div><div class="just-value">${q.val}</div><div class="question-sub">ジャスト？ ハイ？ ロー？</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px">
+        <button class="answer-btn" style="padding:18px;font-size:1rem" onclick="justPassVote('just')">⭕<br>ジャスト</button>
+        <button class="answer-btn" style="padding:18px;font-size:1rem" onclick="justPassVote('high')">🔺<br>ハイ</button>
+        <button class="answer-btn" style="padding:18px;font-size:1rem" onclick="justPassVote('low')">🔻<br>ロー</button>
       </div>`;
   });
 }
 function justPassVote(v){sfxClick();S.gameData.voted[S.gameData.justPassIdx]=v;S.gameData.justPassIdx++;justPassNext(S.gameData.questions[S.round])}
-function justVote(pi,v){sfxClick();S.gameData.voted[pi]=v;document.getElementById(`just-${pi}-yes`).classList.toggle('selected',v);document.getElementById(`just-${pi}-no`).classList.toggle('selected',!v)}
+function justVote(pi,v){sfxClick();S.gameData.voted[pi]=v;['just','high','low'].forEach(k=>{const b=document.getElementById(`just-${pi}-${k}`);if(b)b.classList.toggle('selected',k===v)})}
 function justReveal(){
   clearTimer();const q=S.gameData.questions[S.round];
   S.players.forEach((_,i)=>{if(S.gameData.voted[i]!==undefined&&S.gameData.voted[i]===q.answer)S.scores[i]+=10});
-  if(q.answer)sfxCorrect();else sfxWrong();
-  showResult(q.answer?'⭕':'❌',q.answer?'ジャスト！':'ジャストじゃない！',q.actual,q.detail,()=>{S.round++;nextRound()});
+  const icons={just:'⭕',high:'🔺',low:'🔻'};const labels={just:'ジャスト！',high:'ハイ！（実際はもっと高い）',low:'ロー！（実際はもっと低い）'};
+  if(q.answer==='just')sfxCorrect();else sfxWrong();
+  showResult(icons[q.answer]||'⭕',labels[q.answer]||'ジャスト！',q.actual,q.detail,()=>{S.round++;nextRound()});
 }
 
 // ===== はぁって言うゲーム =====
