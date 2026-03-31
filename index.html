@@ -243,8 +243,40 @@ input,textarea{font-family:inherit;font-size:16px}
 .custom-q-item{display:flex;align-items:center;gap:6px;padding:6px 8px;background:#fff;border-radius:8px;margin-bottom:4px;font-size:0.8rem}
 .custom-q-item .cq-del{color:var(--red);font-weight:900;cursor:pointer;flex-shrink:0}
 
+/* ===== ONLINE MODE ===== */
+.join-room-btn{display:block;margin:20px auto 0;padding:14px 30px;border-radius:var(--radius);font-size:1rem;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--purple),var(--blue));box-shadow:0 4px 15px rgba(160,108,213,0.4);letter-spacing:1px;animation:fadeIn 0.5s ease 0.35s both}
+.join-room-btn:active{transform:scale(0.97)}
+.room-code-display{font-size:3rem;font-weight:900;letter-spacing:12px;text-align:center;color:var(--purple);padding:20px;background:#F0E6FF;border-radius:var(--radius);margin:16px 0;animation:popIn 0.5s ease}
+.room-code-input{display:flex;gap:6px;justify-content:center;margin:16px 0}
+.room-code-input input{width:50px;height:60px;text-align:center;font-size:1.8rem;font-weight:900;border:3px solid #ddd;border-radius:var(--radius-sm);text-transform:uppercase}
+.room-code-input input:focus{border-color:var(--purple);outline:none}
+.player-list-online{margin-top:16px}
+.player-list-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-radius:var(--radius-sm);margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06);animation:fadeIn 0.3s ease}
+.player-list-item .pli-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.player-list-item .pli-dot.online{background:var(--green)}
+.player-list-item .pli-dot.offline{background:#ccc}
+.player-list-item .pli-name{font-weight:700;flex:1}
+.player-list-item .pli-host{font-size:0.7rem;color:var(--orange);font-weight:700}
+.conn-status{position:fixed;top:62px;left:0;right:0;text-align:center;padding:4px;font-size:0.7rem;font-weight:700;z-index:99;display:none}
+.conn-status.disconnected{display:block;background:var(--red);color:#fff}
+.conn-status.reconnecting{display:block;background:var(--yellow);color:#333}
+.waiting-screen{text-align:center;padding:40px 20px}
+.waiting-screen .waiting-icon{font-size:4rem;animation:bounce 2s ease infinite}
+.waiting-screen .waiting-text{font-size:1.1rem;font-weight:700;color:#666;margin-top:16px}
+.online-answer-status{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px 0}
+.oas-chip{padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;color:#fff}
+.oas-chip.answered{background:var(--green)}
+.oas-chip.waiting{background:#ccc}
+.mode-btn-online{background:linear-gradient(135deg,rgba(160,108,213,0.1),rgba(69,183,209,0.1));border-color:var(--purple)}
+.mode-btn-online.selected{border-color:var(--purple);background:linear-gradient(135deg,rgba(160,108,213,0.2),rgba(69,183,209,0.2))}
+
 @media(max-width:360px){.game-grid{grid-template-columns:1fr}.question-text{font-size:1.2rem}}
 </style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -254,6 +286,7 @@ input,textarea{font-family:inherit;font-size:16px}
   <div class="subtitle">みんなで盛り上がるクイズゲーム集</div>
   <button class="history-btn" onclick="toggleHistory()" title="対戦履歴">&#128203;</button>
 </header>
+<div class="conn-status" id="connStatus"></div>
 
 <div class="screen active" id="homeScreen">
   <div class="home-intro">
@@ -268,8 +301,27 @@ input,textarea{font-family:inherit;font-size:16px}
     <div class="game-card gc-match" onclick="selectGame('match')"><span class="game-icon">🤝</span><div class="game-name">答えを合わせましょう</div><div class="game-desc">全員の回答を一致させろ</div><span class="game-players">3-10人</span></div>
     <div class="game-card gc-nan" onclick="selectGame('nan')"><span class="game-icon">💬</span><div class="game-name">ナンテッタ</div><div class="game-desc">キャラのセリフを当てよう</div><span class="game-players">4-8人</span></div>
   </div>
+  <button class="join-room-btn" onclick="showJoinScreen()">🌐 ルームに参加する</button>
   <div id="historyArea"></div>
 </div>
+
+<div class="screen" id="joinScreen">
+  <div class="setup-section">
+    <h3>🌐 ルームに参加</h3>
+    <div class="setup-row">
+      <label>ルームコード（4桁）</label>
+      <div class="room-code-input"><input maxlength="1" id="rc0" oninput="rcNext(0)"><input maxlength="1" id="rc1" oninput="rcNext(1)"><input maxlength="1" id="rc2" oninput="rcNext(2)"><input maxlength="1" id="rc3" oninput="rcNext(3)"></div>
+    </div>
+    <div class="setup-row">
+      <label>あなたの名前</label>
+      <input class="text-input" id="joinName" placeholder="名前を入力" style="text-align:left">
+    </div>
+    <button class="start-btn" onclick="joinRoom()" id="joinBtn">参加する！</button>
+    <div id="joinError" style="color:var(--red);text-align:center;margin-top:10px;font-size:0.85rem;font-weight:700"></div>
+  </div>
+</div>
+
+<div class="screen" id="lobbyScreen"></div>
 
 <div class="screen" id="setupScreen">
   <div class="setup-section">
@@ -279,6 +331,7 @@ input,textarea{font-family:inherit;font-size:16px}
       <div class="mode-selector">
         <div class="mode-btn selected" onclick="selectMode('pass')" id="modePass"><span class="mode-icon">📱</span><div class="mode-label">1台回し</div><div class="mode-desc">端末を回して遊ぶ</div></div>
         <div class="mode-btn" onclick="selectMode('host')" id="modeHost"><span class="mode-icon">🖥️</span><div class="mode-label">ホストモード</div><div class="mode-desc">1台で出題管理</div></div>
+        <div class="mode-btn" onclick="selectMode('online')" id="modeOnline"><span class="mode-icon">🌐</span><div class="mode-label">オンライン</div><div class="mode-desc">各自のスマホで</div></div>
       </div>
     </div>
     <div class="setup-row"><label>ラウンド数</label><input type="number" id="roundCount" value="5" min="1" max="20"></div>
@@ -382,8 +435,8 @@ window.addEventListener('popstate',e=>{
 });
 function goBack(){
   clearTimer();
-  if(S.phase==='playing'){if(confirm('ゲームを中断しますか？')){S.phase='setup';showScreen('homeScreen')}}
-  else{showScreen('homeScreen');S.phase='setup'}
+  if(S.phase==='playing'){if(confirm('ゲームを中断しますか？')){if(S.onlineMode)leaveRoom();S.phase='setup';showScreen('homeScreen')}}
+  else{if(S.onlineMode)cleanupOnline();showScreen('homeScreen');S.phase='setup'}
 }
 
 // ===================================================================
@@ -397,7 +450,15 @@ function setupGameConfig(game){
   const catRow=document.getElementById('justCategoryRow');
   if(game==='just'){catRow.style.display='block';renderJustCatSection()}else{catRow.style.display='none'}
 }
-function selectMode(m){S.mode=m;document.getElementById('modePass').classList.toggle('selected',m==='pass');document.getElementById('modeHost').classList.toggle('selected',m==='host')}
+function selectMode(m){
+  S.mode=m;
+  document.getElementById('modePass').classList.toggle('selected',m==='pass');
+  document.getElementById('modeHost').classList.toggle('selected',m==='host');
+  document.getElementById('modeOnline').classList.toggle('selected',m==='online');
+  // Hide player inputs for online mode (managed via lobby)
+  const pRow=document.querySelector('#setupScreen .setup-row:nth-child(3)');
+  if(pRow)pRow.style.display=m==='online'?'none':'block';
+}
 function initPlayerInputs(g){S.players=g==='just'?['チームA','チームB']:['プレイヤー1','プレイヤー2','プレイヤー3'];renderPlayerInputs()}
 function renderPlayerInputs(){
   document.getElementById('playerInputs').innerHTML=S.players.map((p,i)=>`<div class="player-input-row"><div class="player-num" style="background:${COLORS[i%COLORS.length]}">${i+1}</div><input value="${p}" onchange="S.players[${i}]=this.value" placeholder="名前">${S.players.length>2?`<button class="remove-player" onclick="removePlayer(${i})">✕</button>`:''}</div>`).join('');
@@ -418,8 +479,9 @@ const RULES={
 };
 
 function showRules(){
-  document.querySelectorAll('#playerInputs input').forEach((inp,i)=>{S.players[i]=inp.value.trim()||`P${i+1}`});
+  if(S.mode!=='online')document.querySelectorAll('#playerInputs input').forEach((inp,i)=>{S.players[i]=inp.value.trim()||`P${i+1}`});
   S.maxRounds=parseInt(document.getElementById('roundCount').value)||5;
+  if(S.mode==='online'){createRoom();return}
   const r=RULES[S.currentGame];
   // Validate round count
   const maxQ=getMaxQuestions(S.currentGame);
@@ -1091,6 +1153,534 @@ function nanReveal(){
 // ===== HELPERS =====
 function topBar(){return`<div class="game-top-bar"><div class="round-info">R<strong>${S.round+1}</strong>/${S.maxRounds}</div><div class="score-chips">${renderScoreChips()}</div></div>`}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+// ===================================================================
+// ONLINE MODE - Firebase
+// ===================================================================
+const FB_CONFIG={apiKey:"AIzaSyD374JlypRjIBbJTKJ6S9uG4KGPpdeznic",authDomain:"lavit-party-game.firebaseapp.com",databaseURL:"https://lavit-party-game-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"lavit-party-game",appId:"1:85260220151:web:6928400785c22c46b2c5f2"};
+let fb=null,fbDb=null,fbAuth=null;
+S.onlineMode=false;S.isHost=false;S.roomCode=null;S.uid=null;S.roomRef=null;S.unsubs=[];S.onlinePlayers={};
+
+function initFirebase(){
+  if(fb)return Promise.resolve();
+  fb=firebase.initializeApp(FB_CONFIG);fbDb=firebase.database();fbAuth=firebase.auth();
+  return fbAuth.signInAnonymously().then(cred=>{S.uid=cred.user.uid});
+}
+
+// Connection status
+function watchConnection(){
+  fbDb.ref('.info/connected').on('value',snap=>{
+    const el=document.getElementById('connStatus');
+    if(snap.val()){el.className='conn-status';el.style.display='none';
+      if(S.roomRef&&S.uid)S.roomRef.child('players/'+S.uid+'/connected').onDisconnect().set(false);
+      if(S.roomRef&&S.uid)S.roomRef.child('players/'+S.uid+'/connected').set(true);
+    }else{el.className='conn-status disconnected';el.textContent='接続が切れています…';el.style.display='block'}
+  });
+}
+
+// ===== ROOM MANAGEMENT =====
+function genRoomCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
+
+function createRoom(){
+  initFirebase().then(()=>{
+    const code=genRoomCode();
+    const ref=fbDb.ref('rooms/'+code);
+    ref.once('value').then(snap=>{
+      if(snap.exists()){createRoom();return} // retry on collision
+      S.roomCode=code;S.roomRef=ref;S.isHost=true;S.onlineMode=true;
+      const hostName=S.players[0]||'ホスト';
+      ref.set({
+        hostId:S.uid,game:S.currentGame,status:'waiting',createdAt:firebase.database.ServerValue.TIMESTAMP,
+        settings:{maxRounds:S.maxRounds},
+        players:{[S.uid]:{name:hostName,index:0,connected:true}}
+      }).then(()=>{
+        watchConnection();listenLobby();showLobby();
+      });
+    });
+  }).catch(e=>{alert('Firebase接続エラー: '+e.message)});
+}
+
+function showJoinScreen(){showScreen('joinScreen');pushState('join');document.getElementById('rc0').focus()}
+function rcNext(i){const v=document.getElementById('rc'+i).value;if(v&&i<3)document.getElementById('rc'+(i+1)).focus();if(i===3&&v)document.getElementById('joinBtn').focus()}
+
+function joinRoom(){
+  const code=[0,1,2,3].map(i=>document.getElementById('rc'+i).value.toUpperCase()).join('');
+  const name=document.getElementById('joinName').value.trim();
+  const errEl=document.getElementById('joinError');
+  if(code.length!==4){errEl.textContent='4桁のコードを入力してください';return}
+  if(!name){errEl.textContent='名前を入力してください';return}
+  errEl.textContent='接続中…';
+  initFirebase().then(()=>{
+    const ref=fbDb.ref('rooms/'+code);
+    ref.once('value').then(snap=>{
+      if(!snap.exists()){errEl.textContent='ルームが見つかりません';return}
+      const room=snap.val();
+      if(room.status!=='waiting'){errEl.textContent='このルームは既にゲーム中です';return}
+      S.roomCode=code;S.roomRef=ref;S.isHost=false;S.onlineMode=true;S.currentGame=room.game;S.maxRounds=room.settings?.maxRounds||5;
+      const players=room.players||{};const idx=Object.keys(players).length;
+      ref.child('players/'+S.uid).set({name,index:idx,connected:true}).then(()=>{
+        watchConnection();listenLobby();showLobby();
+      });
+    });
+  }).catch(e=>{errEl.textContent='接続エラー: '+e.message});
+}
+
+function showLobby(){
+  showScreen('lobbyScreen');pushState('lobby');renderLobby();
+}
+
+function listenLobby(){
+  const unsub=S.roomRef.child('players').on('value',snap=>{
+    S.onlinePlayers=snap.val()||{};renderLobby();
+  });
+  S.unsubs.push(()=>S.roomRef.child('players').off('value',unsub));
+  // Listen for game start (players only)
+  if(!S.isHost){
+    const unsub2=S.roomRef.child('status').on('value',snap=>{
+      if(snap.val()==='playing'){onlineGameStarted()}
+    });
+    S.unsubs.push(()=>S.roomRef.child('status').off('value',unsub2));
+  }
+}
+
+function renderLobby(){
+  const ls=document.getElementById('lobbyScreen');
+  const players=S.onlinePlayers;const pArr=Object.entries(players).sort((a,b)=>a[1].index-b[1].index);
+  const gameTitles={just:'THEジャスト',haa:'はぁって言うゲーム',kata:'カタカナーシ',ito:'ito',match:'答えを合わせましょう',nan:'ナンテッタ'};
+  ls.innerHTML=`
+    <div class="setup-section">
+      <h3>🌐 ${gameTitles[S.currentGame]||'ゲーム'}</h3>
+      <div class="room-code-display">${S.roomCode}</div>
+      <div style="text-align:center;font-size:0.8rem;color:#888;margin-bottom:16px">このコードを友達に共有してください</div>
+      <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px">参加者（${pArr.length}人）</div>
+      <div class="player-list-online">
+        ${pArr.map(([uid,p])=>`<div class="player-list-item">
+          <div class="pli-dot ${p.connected?'online':'offline'}"></div>
+          <span class="pli-name">${p.name}</span>
+          ${uid===Object.keys(players).find(k=>players[k].index===0)?'<span class="pli-host">ホスト</span>':''}
+        </div>`).join('')}
+      </div>
+    </div>
+    ${S.isHost?`<button class="start-btn" onclick="onlineStartGame()" ${pArr.length<2?'disabled style="opacity:0.4"':''}>ゲームスタート！（${pArr.length}人）</button>`
+    :'<div class="waiting-screen"><div class="waiting-icon">⏳</div><div class="waiting-text">ホストの開始を待っています…</div></div>'}
+    <button class="action-btn gray" onclick="leaveRoom()" style="margin-top:12px;font-size:0.85rem">ルームを退出</button>
+  `;
+}
+
+function leaveRoom(){
+  if(S.roomRef&&S.uid){S.roomRef.child('players/'+S.uid).remove()}
+  cleanupOnline();showScreen('homeScreen');S.phase='setup';
+}
+
+function cleanupOnline(){
+  S.unsubs.forEach(fn=>fn());S.unsubs=[];
+  S.onlineMode=false;S.isHost=false;S.roomCode=null;S.roomRef=null;S.onlinePlayers={};
+  document.getElementById('connStatus').style.display='none';
+}
+
+// ===== ONLINE GAME START =====
+function onlineStartGame(){
+  if(!S.isHost)return;
+  // Build player list from Firebase
+  const pArr=Object.entries(S.onlinePlayers).sort((a,b)=>a[1].index-b[1].index);
+  S.players=pArr.map(([_,p])=>p.name);S.playerUids=pArr.map(([uid])=>uid);
+  S.scores=S.players.map(()=>0);S.round=0;S.phase='playing';
+  initGameData();
+  // Write initial state
+  S.roomRef.update({status:'playing'});
+  writeOnlineScores();
+  showScreen('gameScreen');pushState('game');
+  onlineNextRound();
+}
+
+function onlineGameStarted(){
+  // Player side: game has started
+  S.roomRef.once('value').then(snap=>{
+    const room=snap.val();S.currentGame=room.game;S.maxRounds=room.settings?.maxRounds||5;
+    const pArr=Object.entries(room.players).sort((a,b)=>a[1].index-b[1].index);
+    S.players=pArr.map(([_,p])=>p.name);S.playerUids=pArr.map(([uid])=>uid);
+    S.scores=S.players.map(()=>0);S.round=0;S.phase='playing';
+    showScreen('gameScreen');pushState('game');
+    listenOnlineState();
+  });
+}
+
+function listenOnlineState(){
+  const unsub=S.roomRef.child('state').on('value',snap=>{
+    const state=snap.val();if(!state)return;
+    S.round=state.round||0;
+    if(state.phase==='question'||state.phase==='answer')renderPlayerAnswerScreen(state);
+    else if(state.phase==='reveal')renderPlayerRevealScreen(state);
+    else if(state.phase==='finished')onlineShowFinal();
+  });
+  S.unsubs.push(()=>S.roomRef.child('state').off('value',unsub));
+  // Listen for score updates
+  const unsub2=S.roomRef.child('scores').on('value',snap=>{
+    const sc=snap.val();if(!sc)return;
+    S.playerUids.forEach((uid,i)=>{if(sc[uid])S.scores[i]=sc[uid].total||0});
+  });
+  S.unsubs.push(()=>S.roomRef.child('scores').off('value',unsub2));
+}
+
+// ===== ONLINE ROUND MANAGEMENT (HOST) =====
+function onlineNextRound(){
+  if(S.round>=S.maxRounds){
+    S.roomRef.child('state').set({round:S.round,phase:'finished'});
+    writeOnlineScores();showFinalResult();return;
+  }
+  const g=S.currentGame;
+  if(g==='just')onlineJustRound();
+  else if(g==='haa')onlineHaaRound();
+  else if(g==='kata')onlineKataRound();
+  else if(g==='ito')onlineItoRound();
+  else if(g==='match')onlineMatchRound();
+  else if(g==='nan')onlineNanRound();
+}
+
+function writeOnlineScores(){
+  const sc={};S.playerUids.forEach((uid,i)=>{sc[uid]={total:S.scores[i]}});
+  S.roomRef.child('scores').set(sc);
+}
+
+function listenAnswers(round,cb){
+  const ref=S.roomRef.child('answers/'+round);
+  const unsub=ref.on('value',snap=>{cb(snap.val()||{})});
+  S.unsubs.push(()=>ref.off('value',unsub));
+}
+
+function renderAnswerStatus(answers){
+  return`<div class="online-answer-status">${S.playerUids.map((uid,i)=>`<span class="oas-chip ${answers[uid]?'answered':'waiting'}">${S.players[i]}${answers[uid]?' ✓':' …'}</span>`).join('')}</div>`;
+}
+
+// ===== ONLINE: THEジャスト =====
+function onlineJustRound(){
+  const q=S.gameData.questions[S.round];
+  S.roomRef.child('state').set({round:S.round,phase:'answer',gameData:{q:q.q,val:q.val,game:'just'}});
+  const gs=document.getElementById('gameScreen');
+  let answersCache={};
+  gs.innerHTML=`<div class="mode-indicator" style="background:var(--purple)">🌐 オンライン（ホスト）</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div class="question-text">${q.q}は…</div><div class="just-value">${q.val}</div><div class="question-sub">ジャスト？ ハイ？ ロー？</div></div>
+    <div class="timer-display" id="timerDisplay">30</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div id="onlineAnswerStatus"></div>
+    <button class="action-btn primary" onclick="onlineJustReveal()" style="margin-top:12px" id="onlineRevealBtn" disabled>回答を確認！</button>`;
+  listenAnswers(S.round,ans=>{
+    answersCache=ans;
+    document.getElementById('onlineAnswerStatus').innerHTML=renderAnswerStatus(ans);
+    const allAnswered=S.playerUids.every(uid=>ans[uid]);
+    document.getElementById('onlineRevealBtn').disabled=!allAnswered;
+    if(allAnswered){clearTimer();document.getElementById('onlineRevealBtn').disabled=false}
+  });
+  S.gameData._answersCache=answersCache;
+  startTimer(30,()=>{document.getElementById('onlineRevealBtn').disabled=false;onlineJustReveal()});
+}
+function onlineJustReveal(){
+  clearTimer();const q=S.gameData.questions[S.round];
+  S.roomRef.child('answers/'+S.round).once('value').then(snap=>{
+    const ans=snap.val()||{};
+    S.playerUids.forEach((uid,i)=>{if(ans[uid]&&ans[uid].value===q.answer)S.scores[i]+=10});
+    writeOnlineScores();
+    const icons={just:'⭕',high:'🔺',low:'🔻'};const labels={just:'ジャスト！',high:'ハイ！',low:'ロー！'};
+    S.roomRef.child('state').set({round:S.round,phase:'reveal',gameData:{q:q.q,val:q.val,actual:q.actual,answer:q.answer,detail:q.detail,icon:icons[q.answer],label:labels[q.answer],game:'just'}});
+    if(q.answer==='just')sfxCorrect();else sfxWrong();
+    showResult(icons[q.answer],labels[q.answer],q.actual,q.detail,()=>{S.round++;onlineNextRound()});
+  });
+}
+
+// ===== ONLINE: ナンテッタ =====
+function onlineNanRound(){
+  const card=S.gameData.cards[S.round];
+  S.roomRef.child('state').set({round:S.round,phase:'answer',gameData:{char:card.char,situation:card.situation,answers:card.answers,game:'nan'}});
+  const gs=document.getElementById('gameScreen');
+  gs.innerHTML=`<div class="mode-indicator" style="background:var(--purple)">🌐 オンライン（ホスト）</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">ナンテッタ</div><div class="nantetta-scene"><div class="nantetta-char">${card.char}</div><div class="nantetta-situation">${card.situation}</div><div class="speech-bubble">❓❓❓</div></div></div>
+    <div class="timer-display" id="timerDisplay">30</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div id="onlineAnswerStatus"></div>
+    <button class="action-btn primary" onclick="onlineNanReveal()" style="margin-top:12px" id="onlineRevealBtn" disabled>答え合わせ！</button>`;
+  listenAnswers(S.round,ans=>{
+    document.getElementById('onlineAnswerStatus').innerHTML=renderAnswerStatus(ans);
+    if(S.playerUids.every(uid=>ans[uid])){clearTimer();document.getElementById('onlineRevealBtn').disabled=false}
+  });
+  startTimer(30,()=>{document.getElementById('onlineRevealBtn').disabled=false;onlineNanReveal()});
+}
+function onlineNanReveal(){
+  clearTimer();const card=S.gameData.cards[S.round],ci=card.correct;
+  S.roomRef.child('answers/'+S.round).once('value').then(snap=>{
+    const ans=snap.val()||{};
+    S.playerUids.forEach((uid,i)=>{if(ans[uid]&&ans[uid].value===ci)S.scores[i]+=10});
+    writeOnlineScores();
+    const cp=S.players.filter((_,i)=>ans[S.playerUids[i]]&&ans[S.playerUids[i]].value===ci);
+    S.roomRef.child('state').set({round:S.round,phase:'reveal',gameData:{char:card.char,situation:card.situation,answers:card.answers,correct:ci,correctAnswer:card.answers[ci],correctPlayers:cp,game:'nan'}});
+    if(cp.length>0)sfxCorrect();else sfxWrong();
+    showResult('💬','正解はこれ！',card.answers[ci],cp.length>0?`正解者：${cp.join('、')}`:'だれも正解できませんでした…',()=>{S.round++;onlineNextRound()});
+  });
+}
+
+// ===== ONLINE: 答えを合わせましょう =====
+function onlineMatchRound(){
+  const q=S.gameData.questions[S.round];
+  S.roomRef.child('state').set({round:S.round,phase:'answer',gameData:{question:q,game:'match'}});
+  const gs=document.getElementById('gameScreen');
+  gs.innerHTML=`<div class="mode-indicator" style="background:var(--purple)">🌐 オンライン（ホスト）</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">答えを合わせましょう</div><div class="question-text">${q}</div></div>
+    <div class="timer-display" id="timerDisplay">30</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div id="onlineAnswerStatus"></div>
+    <button class="action-btn primary" onclick="onlineMatchReveal()" style="margin-top:12px" id="onlineRevealBtn" disabled>答え合わせ！</button>`;
+  listenAnswers(S.round,ans=>{
+    document.getElementById('onlineAnswerStatus').innerHTML=renderAnswerStatus(ans);
+    if(S.playerUids.every(uid=>ans[uid])){clearTimer();document.getElementById('onlineRevealBtn').disabled=false}
+  });
+  startTimer(30,()=>{document.getElementById('onlineRevealBtn').disabled=false;onlineMatchReveal()});
+}
+function onlineMatchReveal(){
+  clearTimer();
+  S.roomRef.child('answers/'+S.round).once('value').then(snap=>{
+    const ans=snap.val()||{};const counts={};const playerAnswers={};
+    S.playerUids.forEach((uid,i)=>{const v=ans[uid]?ans[uid].value:'';playerAnswers[i]=v;if(v){const k=normalize(v);counts[k]=(counts[k]||0)+1}});
+    const maxC=Math.max(...Object.values(counts),0);const best=Object.keys(counts).find(k=>counts[k]===maxC)||'';
+    S.playerUids.forEach((uid,i)=>{if(playerAnswers[i]&&normalize(playerAnswers[i])===best)S.scores[i]+=maxC*5});
+    writeOnlineScores();
+    const allMatch=maxC===S.players.length;
+    const details=S.players.map((p,i)=>`${p}：${playerAnswers[i]||'（未回答）'}`).join('\n');
+    S.roomRef.child('state').set({round:S.round,phase:'reveal',gameData:{game:'match',best,maxC,allMatch,details}});
+    if(allMatch)sfxFanfare();else if(maxC>1)sfxCorrect();else sfxWrong();
+    showResult(allMatch?'🎉':maxC>1?'🤝':'😢',allMatch?'全員一致！':`${maxC}人一致！`,best||'（一致なし）',details,()=>{S.round++;onlineNextRound()});
+  });
+}
+
+// ===== ONLINE: はぁって言うゲーム =====
+function onlineHaaRound(){
+  const card=S.gameData.cards[S.round];
+  const assignments={};const eIdx=shuffle([...Array(card.emotions.length).keys()]);
+  S.playerUids.forEach((uid,i)=>{assignments[uid]=eIdx[i%card.emotions.length]});
+  S.gameData.assignments=assignments;
+  // Write secrets
+  const secrets={};S.playerUids.forEach(uid=>{secrets[uid]={emotion:card.emotions[assignments[uid]],emotionIdx:assignments[uid]}});
+  S.roomRef.child('secrets').set(secrets);
+  S.roomRef.child('state').set({round:S.round,phase:'answer',gameData:{word:card.word,emotions:card.emotions,playerNames:S.players,playerUids:S.playerUids,game:'haa'}});
+  const gs=document.getElementById('gameScreen');
+  gs.innerHTML=`<div class="mode-indicator" style="background:var(--purple)">🌐 オンライン（ホスト）</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">はぁって言うゲーム</div><div class="question-text">お題：「${card.word}」</div><div class="question-sub">各プレイヤーは自分のスマホでお題を確認し、演技してください<br>全員の投票が完了したら「結果発表」を押してください</div></div>
+    <div id="onlineAnswerStatus"></div>
+    <button class="action-btn primary" onclick="onlineHaaReveal()" style="margin-top:12px" id="onlineRevealBtn" disabled>結果発表！</button>`;
+  listenAnswers(S.round,ans=>{
+    document.getElementById('onlineAnswerStatus').innerHTML=renderAnswerStatus(ans);
+    if(S.playerUids.every(uid=>ans[uid])){document.getElementById('onlineRevealBtn').disabled=false}
+  });
+}
+function onlineHaaReveal(){
+  const card=S.gameData.cards[S.round];const assignments=S.gameData.assignments;
+  S.roomRef.child('answers/'+S.round).once('value').then(snap=>{
+    const ans=snap.val()||{};
+    // Each player's answer is {votes: {targetUid: emotionIdx, ...}}
+    S.playerUids.forEach((uid,i)=>{
+      if(!ans[uid]||!ans[uid].votes)return;
+      const votes=ans[uid].votes;
+      Object.keys(votes).forEach(tUid=>{
+        if(votes[tUid]===assignments[tUid]){S.scores[i]+=5;const ti=S.playerUids.indexOf(tUid);if(ti>=0)S.scores[ti]+=5}
+      });
+    });
+    writeOnlineScores();
+    const details=S.playerUids.map((uid,i)=>`${S.players[i]}：${card.emotions[assignments[uid]]}`).join('\n');
+    S.roomRef.child('state').set({round:S.round,phase:'reveal',gameData:{game:'haa',word:card.word,details,assignments:Object.fromEntries(S.playerUids.map((uid,i)=>[uid,{name:S.players[i],emotion:card.emotions[assignments[uid]]}]))}});
+    sfxCorrect();
+    showResult('🎭','正解発表！',`お題：「${card.word}」`,details,()=>{S.round++;onlineNextRound()});
+  });
+}
+
+// ===== ONLINE: ito =====
+function onlineItoRound(){
+  const theme=S.gameData.themes[S.round];
+  const numbers={};S.playerUids.forEach(uid=>{numbers[uid]=Math.floor(Math.random()*100)+1});
+  S.gameData.itoNumbers=numbers;S.gameData.itoOrder=[];
+  const secrets={};S.playerUids.forEach(uid=>{secrets[uid]={number:numbers[uid]}});
+  S.roomRef.child('secrets').set(secrets);
+  S.roomRef.child('state').set({round:S.round,phase:'answer',gameData:{theme:theme.theme,low:theme.low,high:theme.high,playerNames:S.players,playerUids:S.playerUids,game:'ito'}});
+  onlineItoHostUI(theme);
+}
+function onlineItoHostUI(theme){
+  S.gameData.itoOrder=[];
+  const gs=document.getElementById('gameScreen');
+  gs.innerHTML=`<div class="mode-indicator" style="background:var(--purple)">🌐 オンライン（ホスト）</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">ito</div><div class="ito-theme">テーマ：${theme.theme}</div><div class="question-sub">${theme.low}（1）← → ${theme.high}（100）</div><div class="question-text" style="font-size:1rem;margin-top:12px">各自スマホで数字を確認 → 話し合い → 小さい順に並べよう</div></div>
+    <div class="timer-display" id="timerDisplay">120</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div style="font-weight:700;font-size:0.85rem;text-align:center;margin-bottom:8px">小さい順にタップ：</div>
+    <div id="itoOrder"></div>
+    <div id="itoRemaining">${S.players.map((p,i)=>`<button class="answer-btn" id="oito-pick-${i}" style="margin-bottom:6px;padding:12px" onclick="onlineItoPickPlayer(${i})">${p}</button>`).join('')}</div>
+    <button class="action-btn green" id="itoRevealBtn" onclick="onlineItoReveal()" style="margin-top:12px;display:none">答え合わせ！</button>`;
+  S.gameData.timerDuration=120;startTimer(120,()=>onlineItoReveal());
+}
+function onlineItoPickPlayer(idx){
+  sfxClick();if(S.gameData.itoOrder.includes(idx))return;S.gameData.itoOrder.push(idx);
+  document.getElementById(`oito-pick-${idx}`).style.display='none';
+  document.getElementById('itoOrder').innerHTML=S.gameData.itoOrder.map((pi,pos)=>`<div class="ito-order-item"><span style="font-weight:900;color:var(--green)">${pos+1}.</span><span style="font-weight:700">${S.players[pi]}</span><button class="ito-undo-btn" onclick="onlineItoUndo()">✕</button></div>`).join('');
+  if(S.gameData.itoOrder.length===S.players.length)document.getElementById('itoRevealBtn').style.display='block';
+}
+function onlineItoUndo(){
+  const last=S.gameData.itoOrder.pop();if(last===undefined)return;
+  document.getElementById(`oito-pick-${last}`).style.display='block';
+  document.getElementById('itoRevealBtn').style.display='none';
+  document.getElementById('itoOrder').innerHTML=S.gameData.itoOrder.map((pi,pos)=>`<div class="ito-order-item"><span style="font-weight:900;color:var(--green)">${pos+1}.</span><span style="font-weight:700">${S.players[pi]}</span><button class="ito-undo-btn" onclick="onlineItoUndo()">✕</button></div>`).join('');
+}
+function onlineItoReveal(){
+  clearTimer();const nums=S.gameData.itoNumbers;const order=S.gameData.itoOrder.length===S.players.length?S.gameData.itoOrder:[...Array(S.players.length).keys()];
+  let correct=true;for(let i=1;i<order.length;i++){if(nums[S.playerUids[order[i]]]<nums[S.playerUids[order[i-1]]]){correct=false;break}}
+  if(correct){S.players.forEach((_,i)=>S.scores[i]+=10);sfxFanfare()}else sfxWrong();
+  writeOnlineScores();
+  const co=[...Array(S.players.length).keys()].sort((a,b)=>nums[S.playerUids[a]]-nums[S.playerUids[b]]).map((pi,pos)=>`${pos+1}. ${S.players[pi]}：${nums[S.playerUids[pi]]}`).join('\n');
+  S.roomRef.child('state').set({round:S.round,phase:'reveal',gameData:{game:'ito',correct,correctOrder:co}});
+  showResult(correct?'🎉':'😢',correct?'完璧！全員+10pt！':'残念…',correct?'順番通り！':'',co,()=>{S.round++;onlineNextRound()});
+}
+
+// ===== ONLINE: カタカナーシ =====
+function onlineKataRound(){
+  const word=S.gameData.words[S.round];const eIdx=S.round%S.players.length;const eUid=S.playerUids[eIdx];
+  const secrets={};secrets[eUid]={word};
+  S.roomRef.child('secrets').set(secrets);
+  S.roomRef.child('state').set({round:S.round,phase:'answer',gameData:{explainerName:S.players[eIdx],explainerUid:eUid,game:'kata'}});
+  const gs=document.getElementById('gameScreen');
+  gs.innerHTML=`<div class="mode-indicator" style="background:var(--purple)">🌐 オンライン（ホスト）</div>${topBar()}
+    <div class="question-card pop-in"><div class="question-label">カタカナーシ</div><div class="question-text">説明者：${S.players[eIdx]}</div><div class="emotion-display">${word}</div><div class="question-sub" style="color:var(--red);font-weight:700">※説明者のスマホにお題が表示されています</div></div>
+    <div class="timer-display" id="timerDisplay">60</div><div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill" style="width:100%"></div></div>
+    <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;text-align:center">誰が正解した？</div>
+    ${S.players.filter((_,i)=>i!==eIdx).map(p=>{const ri=S.players.indexOf(p);return`<button class="answer-btn" style="margin-bottom:8px;padding:14px" onclick="onlineKataCorrect(${ri},${eIdx})">${p} が正解！</button>`}).join('')}
+    <button class="action-btn gray" onclick="onlineKataTimeUp(${eIdx})" style="margin-top:8px">誰も正解できなかった</button>`;
+  S.gameData.timerDuration=60;startTimer(60,()=>onlineKataTimeUp(eIdx));
+}
+function onlineKataCorrect(gi,ei){
+  clearTimer();S.scores[gi]+=10;S.scores[ei]+=5;writeOnlineScores();sfxCorrect();
+  const word=S.gameData.words[S.round];
+  S.roomRef.child('state').set({round:S.round,phase:'reveal',gameData:{game:'kata',word,guesser:S.players[gi],explainer:S.players[ei]}});
+  showResult('🎉',`${S.players[gi]}が正解！`,word,`説明者${S.players[ei]}にも+5pt`,()=>{S.round++;onlineNextRound()});
+}
+function onlineKataTimeUp(ei){
+  clearTimer();sfxWrong();const word=S.gameData.words[S.round];
+  S.roomRef.child('state').set({round:S.round,phase:'reveal',gameData:{game:'kata',word,guesser:null}});
+  showResult('⏰','タイムアップ！',word,'誰も正解できませんでした',()=>{S.round++;onlineNextRound()});
+}
+
+// ===== ONLINE: PLAYER SCREENS =====
+function renderPlayerAnswerScreen(state){
+  const gd=state.gameData;if(!gd)return;
+  const gs=document.getElementById('gameScreen');
+  S.round=state.round;
+  if(gd.game==='just'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--blue)">🌐 オンライン</div>
+      <div class="question-card pop-in"><div class="question-label">THEジャスト - R${state.round+1}</div><div class="question-text">${gd.q}は…</div><div class="just-value">${gd.val}</div><div class="question-sub">ジャスト？ ハイ？ ロー？</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px" id="playerAnswerArea">
+        <button class="answer-btn" style="padding:18px;font-size:1rem" onclick="sendAnswer('just')">⭕<br>ジャスト</button>
+        <button class="answer-btn" style="padding:18px;font-size:1rem" onclick="sendAnswer('high')">🔺<br>ハイ</button>
+        <button class="answer-btn" style="padding:18px;font-size:1rem" onclick="sendAnswer('low')">🔻<br>ロー</button>
+      </div>`;
+  }else if(gd.game==='nan'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--blue)">🌐 オンライン</div>
+      <div class="question-card pop-in"><div class="question-label">ナンテッタ - R${state.round+1}</div><div class="nantetta-scene"><div class="nantetta-char">${gd.char}</div><div class="nantetta-situation">${gd.situation}</div><div class="speech-bubble">❓❓❓</div></div></div>
+      <div style="display:grid;gap:8px;margin-top:12px" id="playerAnswerArea">
+        ${gd.answers.map((a,i)=>`<button class="answer-btn" style="padding:14px;font-size:1rem" onclick="sendAnswer(${i})">${a}</button>`).join('')}
+      </div>`;
+  }else if(gd.game==='match'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--blue)">🌐 オンライン</div>
+      <div class="question-card pop-in"><div class="question-label">答えを合わせましょう - R${state.round+1}</div><div class="question-text">${gd.question}</div></div>
+      <div style="background:#fff;border-radius:var(--radius);padding:20px;box-shadow:var(--card-shadow);margin-top:16px" id="playerAnswerArea">
+        <input class="text-input" id="playerMatchInput" placeholder="回答を入力…" autocomplete="off">
+        <button class="action-btn primary" onclick="sendAnswer(document.getElementById('playerMatchInput').value.trim())" style="margin-top:12px">回答する！</button>
+      </div>`;
+  }else if(gd.game==='haa'){
+    // Show secret emotion + voting UI
+    S.roomRef.child('secrets/'+S.uid).once('value').then(snap=>{
+      const secret=snap.val();
+      const myEmotion=secret?secret.emotion:'（読込中…）';
+      gs.innerHTML=`<div class="mode-indicator" style="background:var(--blue)">🌐 オンライン</div>
+        <div class="question-card pop-in"><div class="question-label">はぁって言うゲーム - R${state.round+1}</div><div class="question-text">お題：「${gd.word}」</div><div class="emotion-display">${myEmotion}</div><div class="question-sub">↑ あなたの感情です。演じてください！<br>全員の演技後、各プレイヤーの感情を予想して投票</div></div>
+        <div id="playerAnswerArea">
+          ${(gd.playerUids||[]).filter(uid=>uid!==S.uid).map((uid,idx)=>{
+            const pName=(gd.playerNames||[])[gd.playerUids.indexOf(uid)]||'?';
+            return`<div style="background:#fff;border-radius:var(--radius);padding:14px;margin-top:10px;box-shadow:var(--card-shadow)"><div style="font-weight:800;margin-bottom:8px">${pName}は？</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">${(gd.emotions||[]).map((e,eIdx)=>`<button class="vote-btn" id="ohv-${uid}-${eIdx}" onclick="onlineHaaVote('${uid}',${eIdx})">${e.replace(/「|」/g,'')}</button>`).join('')}</div></div>`;
+          }).join('')}
+          <button class="action-btn primary" onclick="submitHaaVotes()" style="margin-top:16px">投票完了！</button>
+        </div>`;
+    });
+  }else if(gd.game==='ito'){
+    S.roomRef.child('secrets/'+S.uid).once('value').then(snap=>{
+      const secret=snap.val();const num=secret?secret.number:'?';
+      gs.innerHTML=`<div class="mode-indicator" style="background:var(--blue)">🌐 オンライン</div>
+        <div class="question-card pop-in"><div class="question-label">ito - R${state.round+1}</div><div class="ito-theme">テーマ：${gd.theme}</div><div class="question-sub">${gd.low}（1）← → ${gd.high}（100）</div><div class="ito-number">${num}</div><div class="question-sub">↑ あなたの秘密の数字<br>テーマに沿った言葉で表現して、みんなで話し合おう！</div></div>
+        <div class="waiting-screen"><div class="waiting-text">ホストが並べ替えを行います…</div></div>`;
+    });
+  }else if(gd.game==='kata'){
+    if(gd.explainerUid===S.uid){
+      S.roomRef.child('secrets/'+S.uid).once('value').then(snap=>{
+        const secret=snap.val();const word=secret?secret.word:'?';
+        gs.innerHTML=`<div class="mode-indicator" style="background:var(--blue)">🌐 オンライン</div>
+          <div class="question-card pop-in"><div class="question-label">カタカナーシ - R${state.round+1}</div><div class="question-text">あなたが説明者です！</div><div class="emotion-display">${word}</div><div class="question-sub" style="color:var(--red);font-weight:700">カタカナを使わずに説明してください！</div></div>`;
+      });
+    }else{
+      gs.innerHTML=`<div class="mode-indicator" style="background:var(--blue)">🌐 オンライン</div>
+        <div class="question-card pop-in"><div class="question-label">カタカナーシ - R${state.round+1}</div><div class="question-text">説明者：${gd.explainerName}</div><div class="question-sub">説明を聞いてお題を当てよう！</div></div>
+        <div class="waiting-screen"><div class="waiting-text">ホストが正解者を判定します…</div></div>`;
+    }
+  }
+  // Check if already answered
+  S.roomRef.child('answers/'+state.round+'/'+S.uid).once('value').then(snap=>{
+    if(snap.exists()){const area=document.getElementById('playerAnswerArea');if(area)area.innerHTML='<div class="waiting-screen"><div class="waiting-icon">✓</div><div class="waiting-text">回答済み！結果を待っています…</div></div>'}
+  });
+}
+
+function sendAnswer(value){
+  if(!value&&value!==0)return;sfxClick();
+  S.roomRef.child('answers/'+S.round+'/'+S.uid).set({value,timestamp:firebase.database.ServerValue.TIMESTAMP});
+  const area=document.getElementById('playerAnswerArea');
+  if(area)area.innerHTML='<div class="waiting-screen"><div class="waiting-icon">✓</div><div class="waiting-text">回答済み！結果を待っています…</div></div>';
+}
+
+// はぁ投票用
+let haaVoteCache={};
+function onlineHaaVote(targetUid,eIdx){
+  sfxClick();haaVoteCache[targetUid]=eIdx;
+  const emotions=document.querySelectorAll(`[id^="ohv-${targetUid}-"]`);
+  emotions.forEach(b=>{b.classList.remove('voted')});
+  const sel=document.getElementById(`ohv-${targetUid}-${eIdx}`);if(sel)sel.classList.add('voted');
+}
+function submitHaaVotes(){
+  S.roomRef.child('answers/'+S.round+'/'+S.uid).set({votes:haaVoteCache,timestamp:firebase.database.ServerValue.TIMESTAMP});
+  haaVoteCache={};
+  const area=document.getElementById('playerAnswerArea');
+  if(area)area.innerHTML='<div class="waiting-screen"><div class="waiting-icon">✓</div><div class="waiting-text">投票済み！結果を待っています…</div></div>';
+}
+
+function renderPlayerRevealScreen(state){
+  const gd=state.gameData;if(!gd)return;
+  const gs=document.getElementById('gameScreen');
+  if(gd.game==='just'){
+    const icons={just:'⭕',high:'🔺',low:'🔻'};const labels={just:'ジャスト！',high:'ハイ！',low:'ロー！'};
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--green)">結果発表</div>
+      <div class="question-card pop-in"><div class="question-label">THEジャスト</div><div style="font-size:3rem;margin:10px 0">${gd.icon||'⭕'}</div><div class="question-text">${gd.label||''}</div><div class="just-value">${gd.actual||''}</div><div class="question-sub">${gd.detail||''}</div></div>`;
+  }else if(gd.game==='nan'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--green)">結果発表</div>
+      <div class="question-card pop-in"><div class="question-label">ナンテッタ</div><div style="font-size:3rem;margin:10px 0">💬</div><div class="question-text">正解：${gd.correctAnswer||''}</div><div class="question-sub">${(gd.correctPlayers||[]).length>0?'正解者：'+(gd.correctPlayers||[]).join('、'):'だれも正解できませんでした…'}</div></div>`;
+  }else if(gd.game==='match'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--green)">結果発表</div>
+      <div class="question-card pop-in"><div class="question-label">答えを合わせましょう</div><div style="font-size:3rem;margin:10px 0">${gd.allMatch?'🎉':gd.maxC>1?'🤝':'😢'}</div><div class="question-text">${gd.allMatch?'全員一致！':gd.maxC+'人一致！'}</div><div class="just-value">${gd.best||'（一致なし）'}</div><div class="question-sub" style="white-space:pre-line">${gd.details||''}</div></div>`;
+  }else if(gd.game==='haa'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--green)">結果発表</div>
+      <div class="question-card pop-in"><div class="question-label">はぁって言うゲーム</div><div style="font-size:3rem;margin:10px 0">🎭</div><div class="question-text">お題：「${gd.word||''}」</div><div class="question-sub" style="white-space:pre-line">${gd.details||''}</div></div>`;
+  }else if(gd.game==='ito'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--green)">結果発表</div>
+      <div class="question-card pop-in"><div class="question-label">ito</div><div style="font-size:3rem;margin:10px 0">${gd.correct?'🎉':'😢'}</div><div class="question-text">${gd.correct?'完璧！全員+10pt！':'残念…'}</div><div class="question-sub" style="white-space:pre-line">${gd.correctOrder||''}</div></div>`;
+  }else if(gd.game==='kata'){
+    gs.innerHTML=`<div class="mode-indicator" style="background:var(--green)">結果発表</div>
+      <div class="question-card pop-in"><div class="question-label">カタカナーシ</div><div style="font-size:3rem;margin:10px 0">${gd.guesser?'🎉':'⏰'}</div><div class="question-text">${gd.guesser?gd.guesser+'が正解！':'タイムアップ！'}</div><div class="just-value">${gd.word||''}</div></div>`;
+  }
+  sfxCorrect();
+}
+
+function onlineShowFinal(){
+  S.roomRef.child('scores').once('value').then(snap=>{
+    const sc=snap.val()||{};
+    S.playerUids.forEach((uid,i)=>{if(sc[uid])S.scores[i]=sc[uid].total||0});
+    showFinalResult();
+    cleanupOnline();
+  });
+}
 </script>
 </body>
 </html>
